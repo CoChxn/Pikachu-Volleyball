@@ -30,8 +30,8 @@ export const CONFIG = {
 
   // 틱 수 임시 표시
   tickText: {
-    font: '8px monospace',
+    font: 'bold 16px monospace',
     x: 4,
-    y: 10,
+    y: 18,
   },
 };
