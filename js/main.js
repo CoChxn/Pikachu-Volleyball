@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { createInitialState, step, TICK_MS } from './game.js';
 import { draw } from './render.js';
+import { readInputs } from './input.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -26,9 +27,6 @@ function fitCanvas() {
 window.addEventListener('resize', fitCanvas);
 fitCanvas();
 
-// 1단계에는 입력이 없으므로 빈 입력을 넘긴다
-const NO_INPUT = { left: false, right: false, up: false, down: false, hit: false };
-
 const state = createInitialState();
 
 // 루프 확인용 측정값 (게임 상태가 아님)
@@ -50,7 +48,8 @@ function frame(now) {
 
   let ticks = 0;
   while (accumulator >= TICK_MS && ticks < CONFIG.maxTicksPerFrame) {
-    step(state, NO_INPUT, NO_INPUT);
+    const [input1P, input2P] = readInputs();
+    step(state, input1P, input2P);
     accumulator -= TICK_MS;
     ticks += 1;
   }
