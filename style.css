@@ -1,0 +1,22 @@
+/* 화면 전체를 쓰고 스크롤바가 생기지 않게 */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+}
+
+/* 캔버스를 화면 가운데에 둔다 */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 확대할 때 픽셀이 뭉개지지 않고 각지게 보이도록 (원작 느낌) */
+canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
