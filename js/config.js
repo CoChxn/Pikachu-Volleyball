@@ -13,13 +13,32 @@ export const CONFIG = {
   integerScale: true,
 
   // 경기장
-  groundY: 252, // 바닥 윗면의 y 좌표
+  groundY: 276, // 바닥 윗면의 y 좌표
   netWidth: 6, // 네트 기둥 두께
   netTopY: 176, // 네트 꼭대기의 y 좌표
   netCapHeight: 4, // 네트 꼭대기 장식 높이
 
+  // 캐릭터
+  player: {
+    halfWidth: 32, // 몸 가로 절반
+    halfHeight: 32, // 몸 세로 절반
+    startOffsetX: 36, // 시작 위치: 자기 쪽 벽에서 몸 중심까지 거리
+    speed: 6, // 한 틱에 좌우로 움직이는 거리
+    jumpSpeed: 16, // 점프 순간 위로 향하는 속도
+    gravity: 1, // 매 틱 아래로 더해지는 속도
+  },
+
+  // 키 배치 (e.code 값: 키보드의 물리적 위치)
+  keys: {
+    p1: { up: 'KeyR', left: 'KeyD', right: 'KeyG', down: 'KeyF', hit: 'KeyZ' },
+    p2: { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', down: 'ArrowDown', hit: 'Enter' },
+  },
+
   // 색상
   colors: {
+    player1: '#f5d142',
+    player2: '#f0904a',
+    playerOutline: '#5a3b12',
     sky: '#7ec8f0',
     ground: '#e2b65a',
     groundLine: '#b8862f',
