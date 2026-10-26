@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { SIDE_LEFT, PLAYER_SPIKING, PLAYER_DIVING, PLAYER_LYING } from './player.js';
+import { PHASE_SERVING, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
 // debug: { enabled, stats, drag } 화면 표시용 정보
@@ -21,6 +22,9 @@ export function draw(ctx, state, debug) {
     drawPlayer(ctx, player);
   }
   drawBall(ctx, state.ball);
+  drawScore(ctx, state);
+  drawFade(ctx, state);
+  drawMessage(ctx, state);
 
   if (debug.enabled) {
     drawDebug(ctx, state, debug);
@@ -75,6 +79,65 @@ function drawBall(ctx, ball) {
   ctx.stroke();
 }
 
+// 그림자 있는 글자. align: 'left' | 'center' | 'right'
+function drawText(ctx, text, x, y, font, align) {
+  const { colors } = CONFIG;
+  const { shadowOffset } = CONFIG.ui;
+  ctx.font = font;
+  ctx.textAlign = align;
+  ctx.fillStyle = colors.uiShadow;
+  ctx.fillText(text, x + shadowOffset, y + shadowOffset);
+  ctx.fillStyle = colors.uiText;
+  ctx.fillText(text, x, y);
+  ctx.textAlign = 'left';
+}
+
+// 위쪽 양 끝에 점수
+function drawScore(ctx, state) {
+  const { width } = CONFIG;
+  const { scoreFont, scoreMarginX, scoreY } = CONFIG.ui;
+  drawText(ctx, String(state.score[0]), scoreMarginX, scoreY, scoreFont, 'left');
+  drawText(ctx, String(state.score[1]), width - scoreMarginX, scoreY, scoreFont, 'right');
+}
+
+// 라운드 사이 어두워지기·밝아지기
+function drawFade(ctx, state) {
+  const { width, height, colors } = CONFIG;
+  const { fadeInTicks } = CONFIG.match;
+
+  let alpha = 0;
+  if (state.phase === PHASE_SERVING) {
+    alpha = Math.max(0, 1 - state.phaseTicks / fadeInTicks);
+  } else if (state.phase === PHASE_FADE_OUT) {
+    alpha = state.phaseTicks / fadeInTicks;
+  }
+  if (alpha <= 0) return;
+
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = colors.fade;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalAlpha = 1;
+}
+
+// 가운데 메시지: READY 깜빡임, 승리 화면
+function drawMessage(ctx, state) {
+  const centerX = CONFIG.width / 2;
+  const { messageFont, messageY, subMessageFont, subMessageY } = CONFIG.ui;
+  const { readyBlinkTicks, gameOverMinTicks } = CONFIG.match;
+
+  if (state.phase === PHASE_SERVING) {
+    const visible = Math.floor(state.phaseTicks / readyBlinkTicks) % 2 === 1;
+    if (visible) drawText(ctx, 'READY', centerX, messageY, messageFont, 'center');
+  }
+
+  if (state.phase === PHASE_GAME_OVER) {
+    drawText(ctx, `${state.winner + 1}P WIN!`, centerX, messageY, messageFont, 'center');
+    if (state.phaseTicks >= gameOverMinTicks) {
+      drawText(ctx, 'PRESS Z / ENTER', centerX, subMessageY, subMessageFont, 'center');
+    }
+  }
+}
+
 // 디버그 표시: 충돌 영역, 수치, 드래그 조준선
 function drawDebug(ctx, state, debug) {
   const { colors, groundY, netWidth, netTopY } = CONFIG;
@@ -112,6 +175,7 @@ function drawDebugText(ctx, state, stats) {
 
   const lines = [
     `tick ${state.tick}  ${stats.ticksPerSecond}/s`,
+    `phase ${state.phase}(${state.phaseTicks}) server ${state.server + 1}P win ${state.winScore}`,
     `ball x${ball.x} y${ball.y} vx${ball.vx} vy${ball.vy}`,
     ...players.map(
       (p, i) => `${i + 1}P ${p.state}(${p.stateTicks}) x${p.x} y${p.y} in${p.inputX},${p.inputY}`,

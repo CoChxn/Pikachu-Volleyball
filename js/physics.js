@@ -3,6 +3,7 @@ import { randomInt } from './rng.js';
 import { SIDE_LEFT, PLAYER_SPIKING } from './player.js';
 
 // 공-벽, 공-천장, 공-바닥: 넘어갔으면 경계로 되돌리고 속도 방향을 뒤집는다
+// 바닥에 닿았으면 true
 export function resolveBallWalls(ball) {
   const { width, groundY } = CONFIG;
   const { radius, ceilingY, ceilingBounceVy } = CONFIG.ball;
@@ -25,7 +26,9 @@ export function resolveBallWalls(ball) {
   if (ball.y > groundY - radius) {
     ball.y = groundY - radius;
     ball.vy = -Math.abs(ball.vy);
+    return true;
   }
+  return false;
 }
 
 // 공-네트: 꼭대기 띠에 닿으면 위로, 그보다 아래면 원래 있던 쪽으로 튕긴다
