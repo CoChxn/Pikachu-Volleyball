@@ -12,6 +12,9 @@ export const CONFIG = {
   // true면 정수 배율로만 확대 (픽셀 크기가 고르게 보임)
   integerScale: true,
 
+  // 난수 시작 시드 (0이면 안 됨)
+  rngInitialSeed: 20261026,
+
   // 경기장
   groundY: 276, // 바닥 윗면의 y 좌표
   netWidth: 6, // 네트 기둥 두께
@@ -26,6 +29,12 @@ export const CONFIG = {
     speed: 6, // 한 틱에 좌우로 움직이는 거리
     jumpSpeed: 16, // 점프 순간 위로 향하는 속도
     gravity: 1, // 매 틱 아래로 더해지는 속도
+    spikeTicks: 5, // 스파이크 자세를 유지하는 틱 수
+    diveSpeed: 8, // 슬라이딩 중 한 틱에 미끄러지는 거리
+    diveJumpSpeed: 5, // 슬라이딩 시작 때 살짝 뜨는 속도
+    lyingTicks: 10, // 슬라이딩 후 엎드려 있는 틱 수
+    flatHalfHeight: 16, // 슬라이딩·엎드림 그림의 세로 절반 (그림 전용, 충돌 판정은 그대로)
+    spikeOutlineWidth: 3, // 스파이크 자세 그림의 테두리 두께
   },
 
   // 공
@@ -35,9 +44,13 @@ export const CONFIG = {
     startX: 56, // 시작 위치와 속도
     startY: 0,
     startVx: 0,
-    startVy: 0,
+    startVy: 1,
     ceilingY: 0, // 공 중심이 이보다 위로 가면 위로 가던 힘을 잃는다 (원작)
     ceilingBounceVy: 1, // 천장에 닿은 뒤 세로 속도 (원작: 바로 떨어지기 시작)
+    bodyBounceDivisor: 3, // 몸 충돌 가로 속도 = (공x - 캐릭터x) ÷ 이 값
+    minBounceSpeed: 15, // 몸에 맞고 위로 튕기는 최소 속도
+    spikeSpeedX: 10, // 스파이크 가로 속도 = (|가로 입력| + 1) × 이 값
+    spikeVyMultiplier: 2, // 스파이크 세로 속도 = |세로 속도| × 세로 입력 × 이 값
     netTopBounceDepth: 16, // 공 아랫면이 네트 꼭대기에서 이만큼 안쪽까지면 위로 튕김, 더 깊으면 옆으로 튕김
   },
 
