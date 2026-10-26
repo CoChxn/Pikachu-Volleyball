@@ -52,6 +52,9 @@ function frame(now) {
 
   let ticks = 0;
   while (accumulator >= TICK_MS && ticks < CONFIG.maxTicksPerFrame) {
+    // 디버그 모드에서는 승리 점수를 낮춰 빠르게 확인 (틱 사이에만 적용)
+    state.winScore = isDebugEnabled() ? CONFIG.debug.winScore : CONFIG.winScore;
+
     // 디버그 던지기는 틱 사이에만 적용
     const pendingThrow = takePendingThrow();
     if (pendingThrow) placeBall(state.ball, pendingThrow);

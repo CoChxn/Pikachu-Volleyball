@@ -57,6 +57,17 @@ export function createPlayer(side) {
   };
 }
 
+// 라운드 시작: 시작 위치로 되돌린다 (치기 키 기록 prevHit은 유지)
+export function resetPlayer(player) {
+  const { prevHit } = player;
+  Object.assign(player, createPlayer(player.side), { prevHit });
+}
+
+// 입력을 받지 않는 동안에도 치기 키 기록만은 갱신한다
+export function trackHitKey(player, input) {
+  player.prevHit = input.hit;
+}
+
 // 한 틱 동안 상태에 따라 이동·점프·스파이크·슬라이딩을 처리한다
 export function updatePlayer(player, input) {
   const { speed, jumpSpeed, diveSpeed, diveJumpSpeed, spikeTicks } = CONFIG.player;

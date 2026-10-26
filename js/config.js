@@ -12,6 +12,32 @@ export const CONFIG = {
   // true면 정수 배율로만 확대 (픽셀 크기가 고르게 보임)
   integerScale: true,
 
+  // 경기 규칙
+  winScore: 15, // 승리 점수 (듀스 없음)
+
+  // 경기 흐름 시간 (단위: 틱, 25틱 = 1초)
+  match: {
+    serveTicks: 30, // 라운드 시작 전 멈춰 있는 시간
+    fadeInTicks: 16, // 검은 화면이 완전히 밝아지는 시간 (어두워질 때도 같은 빠르기)
+    readyBlinkTicks: 5, // READY가 켜졌다 꺼지는 간격
+    slowMotionInterval: 5, // 득점 후 슬로모션: 이 틱마다 한 번만 게임 진행
+    slowMotionSteps: 6, // 슬로모션 동안 게임을 진행하는 횟수
+    fadeOutTicks: 5, // 슬로모션 후 어두워지는 시간
+    gameOverMinTicks: 70, // 승리 화면 후 다시 하기 키를 받기 전까지 시간
+  },
+
+  // 화면 글자 (점수, 메시지)
+  ui: {
+    scoreFont: 'bold 32px monospace',
+    scoreMarginX: 16, // 점수와 화면 좌우 끝 사이 거리
+    scoreY: 36,
+    messageFont: 'bold 32px monospace',
+    messageY: 120,
+    subMessageFont: 'bold 16px monospace',
+    subMessageY: 150,
+    shadowOffset: 2, // 글자 그림자 거리
+  },
+
   // 난수 시작 시드 (0이면 안 됨)
   rngInitialSeed: 20261026,
 
@@ -41,10 +67,9 @@ export const CONFIG = {
   ball: {
     radius: 20,
     gravity: 1, // 매 틱 아래로 더해지는 속도
-    startX: 56, // 시작 위치와 속도
-    startY: 0,
-    startVx: 0,
-    startVy: 1,
+    serveX: [56, 376], // 서브 때 공의 x 위치 [1P 서브, 2P 서브]
+    serveY: 0, // 서브 때 공의 y 위치 (화면 맨 위)
+    serveVy: 1, // 서브 때 공의 세로 속도 (가로 속도는 0)
     ceilingY: 0, // 공 중심이 이보다 위로 가면 위로 가던 힘을 잃는다 (원작)
     ceilingBounceVy: 1, // 천장에 닿은 뒤 세로 속도 (원작: 바로 떨어지기 시작)
     bodyBounceDivisor: 3, // 몸 충돌 가로 속도 = (공x - 캐릭터x) ÷ 이 값
@@ -73,6 +98,9 @@ export const CONFIG = {
     ball: '#ffffff',
     ballOutline: '#c0392b',
     debugText: '#1a1a1a',
+    uiText: '#ffffff',
+    uiShadow: '#1a1a1a',
+    fade: '#000000',
     debugHitbox: '#ff00ff',
     debugNetTop: '#00c000',
     debugDrag: '#0033cc',
@@ -81,9 +109,10 @@ export const CONFIG = {
   // 디버그 모드
   debug: {
     toggleKey: 'F2',
+    winScore: 3, // 디버그 모드에서의 승리 점수 (빠른 확인용)
     font: 'bold 12px monospace',
     textX: 4,
-    textY: 14,
+    textY: 56, // 점수 아래부터
     lineHeight: 14,
     throwDragScale: 4, // 드래그 몇 픽셀당 공 속도 1
     maxThrowSpeed: 30, // 던질 수 있는 최대 속도
