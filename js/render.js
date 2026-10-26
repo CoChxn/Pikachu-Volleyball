@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { SIDE_LEFT } from './player.js';
+import { SIDE_LEFT, PLAYER_SPIKING, PLAYER_DIVING, PLAYER_LYING } from './player.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
 // debug: { enabled, stats, drag } 화면 표시용 정보
@@ -44,16 +44,24 @@ function drawNet(ctx) {
 }
 
 // 캐릭터 임시 그림: 몸 크기에 맞춘 타원 (진짜 그래픽은 7단계)
+// 슬라이딩·엎드림은 납작하게, 스파이크는 테두리를 굵게
 function drawPlayer(ctx, player) {
-  const { halfWidth, halfHeight } = CONFIG.player;
+  const { halfWidth, halfHeight, flatHalfHeight, spikeOutlineWidth } = CONFIG.player;
   const { colors } = CONFIG;
+
+  const flat = player.state === PLAYER_DIVING || player.state === PLAYER_LYING;
+  const drawHalfHeight = flat ? flatHalfHeight : halfHeight;
+  // 납작할 때는 발이 바닥에 붙어 있도록 중심을 내린다
+  const drawY = player.y + halfHeight - drawHalfHeight;
 
   ctx.fillStyle = player.side === SIDE_LEFT ? colors.player1 : colors.player2;
   ctx.strokeStyle = colors.playerOutline;
+  ctx.lineWidth = player.state === PLAYER_SPIKING ? spikeOutlineWidth : 1;
   ctx.beginPath();
-  ctx.ellipse(player.x, player.y, halfWidth, halfHeight, 0, 0, Math.PI * 2);
+  ctx.ellipse(player.x, drawY, halfWidth, drawHalfHeight, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+  ctx.lineWidth = 1;
 }
 
 // 공 임시 그림
@@ -105,7 +113,9 @@ function drawDebugText(ctx, state, stats) {
   const lines = [
     `tick ${state.tick}  ${stats.ticksPerSecond}/s`,
     `ball x${ball.x} y${ball.y} vx${ball.vx} vy${ball.vy}`,
-    ...players.map((p, i) => `${i + 1}P ${p.state} x${p.x} y${p.y}`),
+    ...players.map(
+      (p, i) => `${i + 1}P ${p.state}(${p.stateTicks}) x${p.x} y${p.y} in${p.inputX},${p.inputY}`,
+    ),
     'drag: throw ball',
   ];
 

@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { createPlayer, updatePlayer, SIDE_LEFT, SIDE_RIGHT } from './player.js';
 import { createBall, updateBall } from './ball.js';
+import { resolveBallPlayer } from './physics.js';
 
 // 게임 상태 전체를 담는 일반 객체를 만든다
 export function createInitialState() {
@@ -8,6 +9,7 @@ export function createInitialState() {
     tick: 0, // 지금까지 진행한 틱 수
     players: [createPlayer(SIDE_LEFT), createPlayer(SIDE_RIGHT)], // [1P, 2P]
     ball: createBall(),
+    rngSeed: CONFIG.rngInitialSeed, // 난수 상태
   };
 }
 
@@ -17,6 +19,9 @@ export function step(state, input1P, input2P) {
   updatePlayer(state.players[0], input1P);
   updatePlayer(state.players[1], input2P);
   updateBall(state.ball);
+  for (const player of state.players) {
+    resolveBallPlayer(state, player);
+  }
 }
 
 // 틱 하나의 길이 (밀리초)

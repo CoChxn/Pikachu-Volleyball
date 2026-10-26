@@ -1,4 +1,6 @@
 import { CONFIG } from './config.js';
+import { randomInt } from './rng.js';
+import { SIDE_LEFT, PLAYER_SPIKING } from './player.js';
 
 // 공-벽, 공-천장, 공-바닥: 넘어갔으면 경계로 되돌리고 속도 방향을 뒤집는다
 export function resolveBallWalls(ball) {
@@ -57,5 +59,37 @@ export function resolveBallNet(ball, prevX) {
   } else {
     ball.x = netCenterX + reachX;
     ball.vx = Math.abs(ball.vx);
+  }
+}
+
+// 공-캐릭터: 공 중심이 캐릭터 사각형 안에 들어오면 튕긴다
+export function resolveBallPlayer(state, player) {
+  const { ball } = state;
+  const { halfWidth, halfHeight } = CONFIG.player;
+  const { bodyBounceDivisor, minBounceSpeed, spikeSpeedX, spikeVyMultiplier } = CONFIG.ball;
+
+  const dx = ball.x - player.x;
+  const touching = Math.abs(dx) <= halfWidth && Math.abs(ball.y - player.y) <= halfHeight;
+  if (!touching) {
+    player.ballContact = false;
+    return;
+  }
+  // 겹쳐 있는 동안에는 한 번만 튕긴다
+  if (player.ballContact) return;
+  player.ballContact = true;
+
+  // 몸 충돌: 중심에서 멀리 맞을수록 옆으로 세게 (소수점 버림)
+  ball.vx = Math.trunc(dx / bodyBounceDivisor);
+  if (ball.vx === 0) {
+    ball.vx = randomInt(state, 3) - 1; // -1, 0, 1 중 하나 (원작)
+  }
+  // 항상 위로, 최소 세기 보장
+  ball.vy = -Math.max(Math.abs(ball.vy), minBounceSpeed);
+
+  // 스파이크: 상대 코트 쪽으로, 방향키에 따라 세기·각도
+  if (player.state === PLAYER_SPIKING) {
+    const toward = player.side === SIDE_LEFT ? 1 : -1;
+    ball.vx = toward * (Math.abs(player.inputX) + 1) * spikeSpeedX;
+    ball.vy = Math.abs(ball.vy) * player.inputY * spikeVyMultiplier;
   }
 }
