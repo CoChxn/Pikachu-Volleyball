@@ -1,7 +1,8 @@
 import { CONFIG } from './config.js';
 import { createInitialState, step, TICK_MS } from './game.js';
 import { draw } from './render.js';
-import { readInputs } from './input.js';
+import { readInputs, isDebugEnabled, setupDebugThrow, takePendingThrow, getDragPreview } from './input.js';
+import { placeBall } from './ball.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -29,6 +30,9 @@ fitCanvas();
 
 const state = createInitialState();
 
+// 디버그 모드에서 마우스 드래그로 공 던지기
+setupDebugThrow(canvas);
+
 // 루프 확인용 측정값 (게임 상태가 아님)
 const stats = { ticksPerSecond: 0 };
 let ticksThisSecond = 0;
@@ -48,6 +52,10 @@ function frame(now) {
 
   let ticks = 0;
   while (accumulator >= TICK_MS && ticks < CONFIG.maxTicksPerFrame) {
+    // 디버그 던지기는 틱 사이에만 적용
+    const pendingThrow = takePendingThrow();
+    if (pendingThrow) placeBall(state.ball, pendingThrow);
+
     const [input1P, input2P] = readInputs();
     step(state, input1P, input2P);
     accumulator -= TICK_MS;
@@ -66,7 +74,7 @@ function frame(now) {
     secondStart = now;
   }
 
-  draw(ctx, state, stats);
+  draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview() });
   requestAnimationFrame(frame);
 }
 
