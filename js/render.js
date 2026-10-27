@@ -1,9 +1,10 @@
 import { CONFIG } from './config.js';
 import { SIDE_LEFT, PLAYER_SPIKING, PLAYER_DIVING, PLAYER_LYING } from './player.js';
 import { PHASE_SERVING, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
+import { predictBall, AI_LEVEL_NAMES } from './ai.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
-// debug: { enabled, stats, drag } 화면 표시용 정보
+// debug: { enabled, stats, drag, mode, level } 화면 표시용 정보
 export function draw(ctx, state, debug) {
   const { width, height, groundY, colors } = CONFIG;
 
@@ -25,6 +26,7 @@ export function draw(ctx, state, debug) {
   drawScore(ctx, state);
   drawFade(ctx, state);
   drawMessage(ctx, state);
+  drawModeText(ctx, debug.mode, debug.level);
 
   if (debug.enabled) {
     drawDebug(ctx, state, debug);
@@ -138,6 +140,19 @@ function drawMessage(ctx, state) {
   }
 }
 
+// 아래쪽에 조작 모드와 난이도
+function drawModeText(ctx, mode, level) {
+  const { colors } = CONFIG;
+  const { modeFont, modeY } = CONFIG.ui;
+  const usesCpu = mode.cpu.some((cpu) => cpu);
+  const levelText = usesCpu ? `  ${AI_LEVEL_NAMES[level]}` : '';
+  ctx.font = modeFont;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = colors.modeText;
+  ctx.fillText(`${mode.name}${levelText}  [${CONFIG.ai.modeKey}/${CONFIG.ai.levelKey}]`, CONFIG.width / 2, modeY);
+  ctx.textAlign = 'left';
+}
+
 // 디버그 표시: 충돌 영역, 수치, 드래그 조준선
 function drawDebug(ctx, state, debug) {
   const { colors, groundY, netWidth, netTopY } = CONFIG;
@@ -161,6 +176,14 @@ function drawDebug(ctx, state, debug) {
   ctx.fillStyle = colors.debugNetTop;
   ctx.fillRect(netLeftX(), netTopY, netWidth, netTopBounceDepth);
 
+  // AI가 예측한 공 착지 지점 (바닥의 세로선)
+  const landingX = predictBall(state.ball).landingX;
+  ctx.strokeStyle = colors.debugLanding;
+  ctx.beginPath();
+  ctx.moveTo(landingX, netTopY);
+  ctx.lineTo(landingX, groundY);
+  ctx.stroke();
+
   drawDebugText(ctx, state, debug.stats);
   if (debug.drag) {
     drawDragPreview(ctx, debug.drag);
@@ -176,6 +199,7 @@ function drawDebugText(ctx, state, stats) {
   const lines = [
     `tick ${state.tick}  ${stats.ticksPerSecond}/s`,
     `phase ${state.phase}(${state.phaseTicks}) server ${state.server + 1}P win ${state.winScore}`,
+    `ai bold ${state.ai.boldness.join(',')} err ${state.ai.errorX.join(',')}`,
     `ball x${ball.x} y${ball.y} vx${ball.vx} vy${ball.vy}`,
     ...players.map(
       (p, i) => `${i + 1}P ${p.state}(${p.stateTicks}) x${p.x} y${p.y} in${p.inputX},${p.inputY}`,

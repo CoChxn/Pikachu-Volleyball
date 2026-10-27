@@ -36,6 +36,8 @@ export const CONFIG = {
     subMessageFont: 'bold 16px monospace',
     subMessageY: 150,
     shadowOffset: 2, // 글자 그림자 거리
+    modeFont: 'bold 12px monospace', // 아래쪽 모드·난이도 표시
+    modeY: 296,
   },
 
   // 난수 시작 시드 (0이면 안 됨)
@@ -79,6 +81,26 @@ export const CONFIG = {
     netTopBounceDepth: 16, // 공 아랫면이 네트 꼭대기에서 이만큼 안쪽까지면 위로 튕김, 더 깊으면 옆으로 튕김
   },
 
+  // 컴퓨터 AI
+  ai: {
+    modeKey: 'F3', // 조작 모드 바꾸기: 사람 vs 사람 → 사람 vs CPU → CPU vs CPU
+    levelKey: 'F4', // 난이도 바꾸기: 쉬움 → 보통 → 어려움
+    defaultMode: 1, // 처음 모드 (0: 사람 vs 사람, 1: 사람 vs CPU, 2: CPU vs CPU)
+    defaultLevel: 1, // 처음 난이도 (0: 쉬움, 1: 보통, 2: 어려움)
+    maxPredictTicks: 200, // 공을 미리 굴려 볼 최대 틱 수
+    maxBoldness: 5, // 대담함은 0 ~ (이 값 - 1) 중 라운드마다 하나
+    boldStepX: 6, // 대담함 1당 기본 위치가 네트 쪽으로 가는 거리
+    receiveOffsetX: 12, // 공을 받을 때 공보다 내 코트 안쪽으로 서는 거리 (공을 상대 쪽으로 보내려고)
+    moveDeadzone: 4, // 목표와 이 거리 안이면 멈춤
+    jumpLookTicks: 16, // 점프하면 공과 만날지 몇 틱 앞까지 계산할지
+    jumpReachX: 20, // 점프 판단: 공과 이 가로 거리 안에서 만나면 점프
+    jumpReachPerBold: 6, // 대담함 1당 점프 판단 가로 거리 증가
+    diveTriggerTicks: 16, // 공이 이 틱 안에 떨어질 때만 슬라이딩 고려
+    diveMaxBoldness: 3, // 대담함이 이 값 이상이면 슬라이딩하지 않음
+    easyReactionTicks: 4, // 쉬움: 이 틱마다 한 번만 판단
+    easyErrorRange: 16, // 쉬움: 받는 위치 오차 범위 (±)
+  },
+
   // 키 배치 (e.code 값: 키보드의 물리적 위치)
   keys: {
     p1: { up: 'KeyR', left: 'KeyD', right: 'KeyG', down: 'KeyF', hit: 'KeyZ' },
@@ -104,6 +126,8 @@ export const CONFIG = {
     debugHitbox: '#ff00ff',
     debugNetTop: '#00c000',
     debugDrag: '#0033cc',
+    debugLanding: '#ff0000',
+    modeText: '#1a1a1a',
   },
 
   // 디버그 모드

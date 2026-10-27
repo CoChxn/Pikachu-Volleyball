@@ -69,7 +69,7 @@ export function resolveBallNet(ball, prevX) {
 export function resolveBallPlayer(state, player) {
   const { ball } = state;
   const { halfWidth, halfHeight } = CONFIG.player;
-  const { bodyBounceDivisor, minBounceSpeed, spikeSpeedX, spikeVyMultiplier } = CONFIG.ball;
+  const { bodyBounceDivisor, minBounceSpeed } = CONFIG.ball;
 
   const dx = ball.x - player.x;
   const touching = Math.abs(dx) <= halfWidth && Math.abs(ball.y - player.y) <= halfHeight;
@@ -91,8 +91,19 @@ export function resolveBallPlayer(state, player) {
 
   // 스파이크: 상대 코트 쪽으로, 방향키에 따라 세기·각도
   if (player.state === PLAYER_SPIKING) {
-    const toward = player.side === SIDE_LEFT ? 1 : -1;
-    ball.vx = toward * (Math.abs(player.inputX) + 1) * spikeSpeedX;
-    ball.vy = Math.abs(ball.vy) * player.inputY * spikeVyMultiplier;
+    const v = spikeVelocity(player.side, player.inputX, player.inputY, ball.vy);
+    ball.vx = v.vx;
+    ball.vy = v.vy;
   }
+}
+
+// 스파이크 후 공 속도 (AI도 같은 함수로 결과를 미리 계산)
+// vy: 몸 충돌 처리 후의 세로 속도
+export function spikeVelocity(side, inputX, inputY, vy) {
+  const { spikeSpeedX, spikeVyMultiplier } = CONFIG.ball;
+  const toward = side === SIDE_LEFT ? 1 : -1;
+  return {
+    vx: toward * (Math.abs(inputX) + 1) * spikeSpeedX,
+    vy: Math.abs(vy) * inputY * spikeVyMultiplier,
+  };
 }
