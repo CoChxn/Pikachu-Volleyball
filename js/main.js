@@ -1,17 +1,17 @@
 import { CONFIG } from './config.js';
 import { createInitialState, step, TICK_MS, PHASE_GAME_OVER } from './game.js';
-import { draw } from './render.js';
+import { draw, drawMenu } from './render.js';
 import {
   readInputs,
   isDebugEnabled,
   setupDebugThrow,
   takePendingThrow,
   getDragPreview,
-  getMode,
-  getAiLevel,
+  takeBackPressed,
 } from './input.js';
-import { createAiController } from './ai.js';
 import { placeBall } from './ball.js';
+import { createAiController } from './ai.js';
+import { createMenu, updateMenu } from './menu.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -37,20 +37,56 @@ function fitCanvas() {
 window.addEventListener('resize', fitCanvas);
 fitCanvas();
 
-const state = createInitialState();
-
 // 디버그 모드에서 마우스 드래그로 공 던지기
 setupDebugThrow(canvas);
 
-// CPU가 맡은 쪽의 입력은 키보드 대신 AI에서 가져온다
-const aiControllers = [createAiController(0), createAiController(1)];
+// 화면 흐름: 메뉴 → 경기 → (경기 종료 후 ESC) 메뉴
+const menu = createMenu();
+let state = null; // 경기 중일 때만 게임 상태가 있다
+let settings = null; // 메뉴에서 고른 설정 { cpu: [1P, 2P], level, name }
+let aiControllers = [];
 
-// 이번 틱 [1P, 2P] 입력. 경기 종료 화면에서는 다시 하기를 위해 키보드 그대로
-function collectInputs() {
-  const inputs = readInputs();
-  if (state.phase === PHASE_GAME_OVER) return inputs;
-  const mode = getMode();
-  return inputs.map((input, side) => (mode.cpu[side] ? aiControllers[side](state, getAiLevel()) : input));
+// 메뉴에서 고른 설정으로 새 경기 시작
+function startGame(chosen) {
+  settings = chosen;
+  state = createInitialState();
+  aiControllers = [createAiController(0), createAiController(1)];
+}
+
+// 이번 틱 [1P, 2P] 입력. CPU 쪽은 AI에서, 경기 종료 화면에서는 다시 하기를 위해 키보드 그대로
+function collectInputs(keyboardInputs) {
+  if (state.phase === PHASE_GAME_OVER) return keyboardInputs;
+  return keyboardInputs.map((input, side) =>
+    settings.cpu[side] ? aiControllers[side](state, settings.level) : input,
+  );
+}
+
+// 한 틱: 메뉴 또는 경기
+function tick() {
+  const keyboardInputs = readInputs();
+  const backPressed = takeBackPressed();
+
+  if (!state) {
+    const chosen = updateMenu(menu, keyboardInputs, backPressed);
+    if (chosen) startGame(chosen);
+    return;
+  }
+
+  // 경기 종료 화면에서 ESC → 메뉴로
+  if (state.phase === PHASE_GAME_OVER && backPressed) {
+    state = null;
+    return;
+  }
+
+  // 디버그 모드에서는 승리 점수를 낮춰 빠르게 확인 (틱 사이에만 적용)
+  state.winScore = isDebugEnabled() ? CONFIG.debug.winScore : CONFIG.winScore;
+
+  // 디버그 던지기는 틱 사이에만 적용
+  const pendingThrow = takePendingThrow();
+  if (pendingThrow) placeBall(state.ball, pendingThrow);
+
+  const [input1P, input2P] = collectInputs(keyboardInputs);
+  step(state, input1P, input2P);
 }
 
 // 루프 확인용 측정값 (게임 상태가 아님)
@@ -72,15 +108,7 @@ function frame(now) {
 
   let ticks = 0;
   while (accumulator >= TICK_MS && ticks < CONFIG.maxTicksPerFrame) {
-    // 디버그 모드에서는 승리 점수를 낮춰 빠르게 확인 (틱 사이에만 적용)
-    state.winScore = isDebugEnabled() ? CONFIG.debug.winScore : CONFIG.winScore;
-
-    // 디버그 던지기는 틱 사이에만 적용
-    const pendingThrow = takePendingThrow();
-    if (pendingThrow) placeBall(state.ball, pendingThrow);
-
-    const [input1P, input2P] = collectInputs();
-    step(state, input1P, input2P);
+    tick();
     accumulator -= TICK_MS;
     ticks += 1;
   }
@@ -97,13 +125,11 @@ function frame(now) {
     secondStart = now;
   }
 
-  draw(ctx, state, {
-    enabled: isDebugEnabled(),
-    stats,
-    drag: getDragPreview(),
-    mode: getMode(),
-    level: getAiLevel(),
-  });
+  if (state) {
+    draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview(), settings });
+  } else {
+    drawMenu(ctx, menu);
+  }
   requestAnimationFrame(frame);
 }
 

@@ -1,5 +1,4 @@
 import { CONFIG } from './config.js';
-import { AI_LEVEL_COUNT } from './ai.js';
 
 // 지금 눌려 있는 키들 (e.code 값)
 const pressed = new Set();
@@ -13,14 +12,8 @@ const tapped = new Set();
 // 디버그 모드 켜짐 여부 (게임 상태가 아닌 화면 표시용)
 let debugEnabled = false;
 
-// 조작 모드와 AI 난이도 (게임 상태가 아닌 입력 설정)
-export const MODES = [
-  { name: 'HUMAN vs HUMAN', cpu: [false, false] },
-  { name: 'HUMAN vs CPU', cpu: [false, true] },
-  { name: 'CPU vs CPU', cpu: [true, true] },
-];
-let modeIndex = CONFIG.ai.defaultMode;
-let levelIndex = CONFIG.ai.defaultLevel;
+// 뒤로 가기 키가 눌렸는지 (한 번 꺼내 가면 지워짐)
+let backTapped = false;
 
 window.addEventListener('keydown', (e) => {
   if (e.code === CONFIG.debug.toggleKey) {
@@ -28,14 +21,9 @@ window.addEventListener('keydown', (e) => {
     if (!e.repeat) debugEnabled = !debugEnabled;
     return;
   }
-  if (e.code === CONFIG.ai.modeKey) {
+  if (e.code === CONFIG.keys.back) {
     e.preventDefault();
-    if (!e.repeat) modeIndex = (modeIndex + 1) % MODES.length;
-    return;
-  }
-  if (e.code === CONFIG.ai.levelKey) {
-    e.preventDefault();
-    if (!e.repeat) levelIndex = (levelIndex + 1) % AI_LEVEL_COUNT;
+    if (!e.repeat) backTapped = true;
     return;
   }
   if (!gameKeys.has(e.code)) return;
@@ -54,14 +42,19 @@ window.addEventListener('blur', () => {
   tapped.clear();
 });
 
+// 지금 눌려 있거나, 틱 사이에 잠깐 눌렸던 키
+function isDown(code) {
+  return pressed.has(code) || tapped.has(code);
+}
+
 // 키 배치 하나를 { left, right, up, down, hit } 입력값으로 바꾼다
 function toInput(keyMap) {
   return {
-    left: pressed.has(keyMap.left),
-    right: pressed.has(keyMap.right),
-    up: pressed.has(keyMap.up),
-    down: pressed.has(keyMap.down),
-    hit: pressed.has(keyMap.hit) || tapped.has(keyMap.hit),
+    left: isDown(keyMap.left),
+    right: isDown(keyMap.right),
+    up: isDown(keyMap.up),
+    down: isDown(keyMap.down),
+    hit: isDown(keyMap.hit),
   };
 }
 
@@ -76,12 +69,11 @@ export function isDebugEnabled() {
   return debugEnabled;
 }
 
-export function getMode() {
-  return MODES[modeIndex];
-}
-
-export function getAiLevel() {
-  return levelIndex;
+// 매 틱 호출: 지난 틱 이후 뒤로 가기 키가 눌렸는지
+export function takeBackPressed() {
+  const pressedBack = backTapped;
+  backTapped = false;
+  return pressedBack;
 }
 
 // --- 디버그용 공 던지기 (마우스 드래그) ---

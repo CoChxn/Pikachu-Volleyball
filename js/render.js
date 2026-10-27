@@ -1,24 +1,13 @@
 import { CONFIG } from './config.js';
 import { SIDE_LEFT, PLAYER_SPIKING, PLAYER_DIVING, PLAYER_LYING } from './player.js';
 import { PHASE_SERVING, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
-import { predictBall, AI_LEVEL_NAMES } from './ai.js';
+import { predictBall } from './ai.js';
+import { MENU_SCREENS } from './menu.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
-// debug: { enabled, stats, drag, mode, level } 화면 표시용 정보
+// debug: { enabled, stats, drag, settings } 화면 표시용 정보
 export function draw(ctx, state, debug) {
-  const { width, height, groundY, colors } = CONFIG;
-
-  // 하늘
-  ctx.fillStyle = colors.sky;
-  ctx.fillRect(0, 0, width, height);
-
-  // 바닥
-  ctx.fillStyle = colors.ground;
-  ctx.fillRect(0, groundY, width, height - groundY);
-  ctx.fillStyle = colors.groundLine;
-  ctx.fillRect(0, groundY, width, 1);
-
-  drawNet(ctx);
+  drawCourt(ctx);
   for (const player of state.players) {
     drawPlayer(ctx, player);
   }
@@ -26,11 +15,55 @@ export function draw(ctx, state, debug) {
   drawScore(ctx, state);
   drawFade(ctx, state);
   drawMessage(ctx, state);
-  drawModeText(ctx, debug.mode, debug.level);
 
   if (debug.enabled) {
     drawDebug(ctx, state, debug);
   }
+}
+
+// 하늘, 바닥, 네트
+function drawCourt(ctx) {
+  const { width, height, groundY, colors } = CONFIG;
+
+  ctx.fillStyle = colors.sky;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.fillStyle = colors.ground;
+  ctx.fillRect(0, groundY, width, height - groundY);
+  ctx.fillStyle = colors.groundLine;
+  ctx.fillRect(0, groundY, width, 1);
+
+  drawNet(ctx);
+}
+
+// 시작 메뉴: 어두운 경기장 위에 제목과 항목
+export function drawMenu(ctx, menu) {
+  const { width, height, colors } = CONFIG;
+  const m = CONFIG.menu;
+  const centerX = width / 2;
+
+  drawCourt(ctx);
+  ctx.globalAlpha = m.overlayAlpha;
+  ctx.fillStyle = colors.fade;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalAlpha = 1;
+
+  drawText(ctx, m.title, centerX, m.titleY, m.titleFont, 'center');
+  const { heading, items } = MENU_SCREENS[menu.screen];
+  if (heading) drawText(ctx, heading, centerX, m.headingY, m.headingFont, 'center');
+
+  items.forEach((item, i) => {
+    const y = m.itemStartY + m.itemGap * i;
+    const selected = i === menu.cursor;
+    drawText(ctx, item.label, centerX, y, m.itemFont, 'center', selected ? colors.menuSelected : colors.uiText);
+    if (selected) {
+      ctx.font = m.itemFont;
+      const left = centerX - ctx.measureText(item.label).width / 2 - m.cursorGapX;
+      drawText(ctx, '>', left, y, m.itemFont, 'right', colors.menuSelected);
+    }
+  });
+
+  drawText(ctx, m.hint, centerX, m.hintY, m.hintFont, 'center');
 }
 
 // 네트 기둥의 왼쪽 x
@@ -82,14 +115,14 @@ function drawBall(ctx, ball) {
 }
 
 // 그림자 있는 글자. align: 'left' | 'center' | 'right'
-function drawText(ctx, text, x, y, font, align) {
+function drawText(ctx, text, x, y, font, align, color = CONFIG.colors.uiText) {
   const { colors } = CONFIG;
   const { shadowOffset } = CONFIG.ui;
   ctx.font = font;
   ctx.textAlign = align;
   ctx.fillStyle = colors.uiShadow;
   ctx.fillText(text, x + shadowOffset, y + shadowOffset);
-  ctx.fillStyle = colors.uiText;
+  ctx.fillStyle = color;
   ctx.fillText(text, x, y);
   ctx.textAlign = 'left';
 }
@@ -135,22 +168,9 @@ function drawMessage(ctx, state) {
   if (state.phase === PHASE_GAME_OVER) {
     drawText(ctx, `${state.winner + 1}P WIN!`, centerX, messageY, messageFont, 'center');
     if (state.phaseTicks >= gameOverMinTicks) {
-      drawText(ctx, 'PRESS Z / ENTER', centerX, subMessageY, subMessageFont, 'center');
+      drawText(ctx, 'Z/ENTER: AGAIN   ESC: MENU', centerX, subMessageY, subMessageFont, 'center');
     }
   }
-}
-
-// 아래쪽에 조작 모드와 난이도
-function drawModeText(ctx, mode, level) {
-  const { colors } = CONFIG;
-  const { modeFont, modeY } = CONFIG.ui;
-  const usesCpu = mode.cpu.some((cpu) => cpu);
-  const levelText = usesCpu ? `  ${AI_LEVEL_NAMES[level]}` : '';
-  ctx.font = modeFont;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = colors.modeText;
-  ctx.fillText(`${mode.name}${levelText}  [${CONFIG.ai.modeKey}/${CONFIG.ai.levelKey}]`, CONFIG.width / 2, modeY);
-  ctx.textAlign = 'left';
 }
 
 // 디버그 표시: 충돌 영역, 수치, 드래그 조준선
@@ -184,14 +204,15 @@ function drawDebug(ctx, state, debug) {
   ctx.lineTo(landingX, groundY);
   ctx.stroke();
 
-  drawDebugText(ctx, state, debug.stats);
+  drawDebugText(ctx, state, debug);
   if (debug.drag) {
     drawDragPreview(ctx, debug.drag);
   }
 }
 
 // 왼쪽 위에 수치 표시
-function drawDebugText(ctx, state, stats) {
+function drawDebugText(ctx, state, debug) {
+  const { stats } = debug;
   const { colors } = CONFIG;
   const { font, textX, textY, lineHeight } = CONFIG.debug;
   const { ball, players } = state;
@@ -199,7 +220,7 @@ function drawDebugText(ctx, state, stats) {
   const lines = [
     `tick ${state.tick}  ${stats.ticksPerSecond}/s`,
     `phase ${state.phase}(${state.phaseTicks}) server ${state.server + 1}P win ${state.winScore}`,
-    `ai bold ${state.ai.boldness.join(',')} err ${state.ai.errorX.join(',')}`,
+    `${debug.settings.name}  ai bold ${state.ai.boldness.join(',')} err ${state.ai.errorX.join(',')}`,
     `ball x${ball.x} y${ball.y} vx${ball.vx} vy${ball.vy}`,
     ...players.map(
       (p, i) => `${i + 1}P ${p.state}(${p.stateTicks}) x${p.x} y${p.y} in${p.inputX},${p.inputY}`,
