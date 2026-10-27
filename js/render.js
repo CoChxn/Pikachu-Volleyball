@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { SIDE_LEFT, PLAYER_SPIKING, PLAYER_DIVING, PLAYER_LYING } from './player.js';
 import { PHASE_SERVING, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
 import { predictBall } from './ai.js';
-import { MENU_SCREENS } from './menu.js';
+import { MENU_SCREENS, PAUSE_ITEMS } from './menu.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
 // debug: { enabled, stats, drag, settings } 화면 표시용 정보
@@ -38,23 +38,48 @@ function drawCourt(ctx) {
 
 // 시작 메뉴: 어두운 경기장 위에 제목과 항목
 export function drawMenu(ctx, menu) {
-  const { width, height, colors } = CONFIG;
   const m = CONFIG.menu;
-  const centerX = width / 2;
+  const centerX = CONFIG.width / 2;
 
   drawCourt(ctx);
-  ctx.globalAlpha = m.overlayAlpha;
-  ctx.fillStyle = colors.fade;
-  ctx.fillRect(0, 0, width, height);
-  ctx.globalAlpha = 1;
+  drawOverlay(ctx);
 
   drawText(ctx, m.title, centerX, m.titleY, m.titleFont, 'center');
   const { heading, items } = MENU_SCREENS[menu.screen];
   if (heading) drawText(ctx, heading, centerX, m.headingY, m.headingFont, 'center');
+  drawMenuItems(ctx, items, menu.cursor);
+  drawText(ctx, m.hint, centerX, m.hintY, m.hintFont, 'center');
+}
+
+// 일시정지: 멈춘 경기 화면 위에 어둡게 덮고 항목 표시
+export function drawPause(ctx, pauseMenu) {
+  const m = CONFIG.menu;
+  const centerX = CONFIG.width / 2;
+
+  drawOverlay(ctx);
+  drawText(ctx, m.pauseTitle, centerX, m.headingY, m.titleFont, 'center');
+  drawMenuItems(ctx, PAUSE_ITEMS, pauseMenu.cursor);
+  drawText(ctx, m.pauseHint, centerX, m.hintY, m.hintFont, 'center');
+}
+
+// 화면 전체를 반투명하게 어둡게
+function drawOverlay(ctx) {
+  const { width, height, colors } = CONFIG;
+  ctx.globalAlpha = CONFIG.menu.overlayAlpha;
+  ctx.fillStyle = colors.fade;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalAlpha = 1;
+}
+
+// 메뉴 항목 목록: 선택된 항목은 노란색과 > 표시
+function drawMenuItems(ctx, items, cursor) {
+  const { colors } = CONFIG;
+  const m = CONFIG.menu;
+  const centerX = CONFIG.width / 2;
 
   items.forEach((item, i) => {
     const y = m.itemStartY + m.itemGap * i;
-    const selected = i === menu.cursor;
+    const selected = i === cursor;
     drawText(ctx, item.label, centerX, y, m.itemFont, 'center', selected ? colors.menuSelected : colors.uiText);
     if (selected) {
       ctx.font = m.itemFont;
@@ -62,8 +87,6 @@ export function drawMenu(ctx, menu) {
       drawText(ctx, '>', left, y, m.itemFont, 'right', colors.menuSelected);
     }
   });
-
-  drawText(ctx, m.hint, centerX, m.hintY, m.hintFont, 'center');
 }
 
 // 네트 기둥의 왼쪽 x

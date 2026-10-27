@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { createInitialState, step, TICK_MS, PHASE_GAME_OVER } from './game.js';
-import { draw, drawMenu } from './render.js';
+import { draw, drawMenu, drawPause } from './render.js';
 import {
   readInputs,
   isDebugEnabled,
@@ -11,7 +11,14 @@ import {
 } from './input.js';
 import { placeBall } from './ball.js';
 import { createAiController } from './ai.js';
-import { createMenu, updateMenu } from './menu.js';
+import {
+  createMenu,
+  updateMenu,
+  returnToTitle,
+  createPauseMenu,
+  updatePauseMenu,
+  PAUSE_TO_MENU,
+} from './menu.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -45,12 +52,32 @@ const menu = createMenu();
 let state = null; // 경기 중일 때만 게임 상태가 있다
 let settings = null; // 메뉴에서 고른 설정 { cpu: [1P, 2P], level, name }
 let aiControllers = [];
+let pauseMenu = null; // 일시정지 중일 때만 있다 (게임 상태가 아닌 화면 상태)
+let holdHitUntilRelease = false; // 일시정지 해제 직후: 결정에 쓴 치기 키를 뗄 때까지 경기에 전달하지 않음
 
 // 메뉴에서 고른 설정으로 새 경기 시작
 function startGame(chosen) {
   settings = chosen;
   state = createInitialState();
   aiControllers = [createAiController(0), createAiController(1)];
+  pauseMenu = null;
+}
+
+// 경기를 끝내고 메뉴로 (지금 누른 키로 메뉴가 바로 선택되지 않게)
+function backToMenu(inputs) {
+  state = null;
+  pauseMenu = null;
+  returnToTitle(menu, inputs);
+}
+
+// 일시정지 해제 직후, 치기 키를 계속 누르고 있으면 뗄 때까지 감춘다 (스파이크·슬라이딩 오작동 방지)
+function maskHeldHit(inputs) {
+  if (!holdHitUntilRelease) return inputs;
+  if (!inputs.some((input) => input.hit)) {
+    holdHitUntilRelease = false;
+    return inputs;
+  }
+  return inputs.map((input) => ({ ...input, hit: false }));
 }
 
 // 이번 틱 [1P, 2P] 입력. CPU 쪽은 AI에서, 경기 종료 화면에서는 다시 하기를 위해 키보드 그대로
@@ -63,7 +90,7 @@ function collectInputs(keyboardInputs) {
 
 // 한 틱: 메뉴 또는 경기
 function tick() {
-  const keyboardInputs = readInputs();
+  let keyboardInputs = readInputs();
   const backPressed = takeBackPressed();
 
   if (!state) {
@@ -74,9 +101,29 @@ function tick() {
 
   // 경기 종료 화면에서 ESC → 메뉴로
   if (state.phase === PHASE_GAME_OVER && backPressed) {
-    state = null;
+    backToMenu(keyboardInputs);
     return;
   }
+
+  // 일시정지 중: 경기는 멈추고 메뉴만 처리
+  if (pauseMenu) {
+    const choice = updatePauseMenu(pauseMenu, keyboardInputs, backPressed);
+    if (choice === PAUSE_TO_MENU) {
+      backToMenu(keyboardInputs);
+    } else if (choice) {
+      pauseMenu = null;
+      holdHitUntilRelease = true;
+    }
+    return;
+  }
+
+  // 경기 중 ESC → 일시정지
+  if (backPressed) {
+    pauseMenu = createPauseMenu(keyboardInputs);
+    return;
+  }
+
+  keyboardInputs = maskHeldHit(keyboardInputs);
 
   // 디버그 모드에서는 승리 점수를 낮춰 빠르게 확인 (틱 사이에만 적용)
   state.winScore = isDebugEnabled() ? CONFIG.debug.winScore : CONFIG.winScore;
@@ -127,6 +174,7 @@ function frame(now) {
 
   if (state) {
     draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview(), settings });
+    if (pauseMenu) drawPause(ctx, pauseMenu);
   } else {
     drawMenu(ctx, menu);
   }

@@ -52,6 +52,8 @@ export const CONFIG = {
     hintFont: 'bold 11px monospace',
     hintY: 292,
     hint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: BACK',
+    pauseTitle: 'PAUSE',
+    pauseHint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: CONTINUE',
     overlayAlpha: 0.45, // 메뉴 뒤 경기장을 어둡게
     defaultLevel: 1, // 난이도 화면의 처음 커서 (0: 쉬움, 1: 보통, 2: 어려움)
   },
@@ -117,7 +119,7 @@ export const CONFIG = {
   keys: {
     p1: { up: 'KeyR', left: 'KeyD', right: 'KeyG', down: 'KeyF', hit: 'KeyZ' },
     p2: { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', down: 'ArrowDown', hit: 'Enter' },
-    back: 'Escape', // 메뉴 뒤로 가기, 경기 종료 후 메뉴로
+    back: 'Escape', // 메뉴 뒤로 가기, 경기 중 일시정지, 경기 종료 후 메뉴로
   },
 
   // 색상
