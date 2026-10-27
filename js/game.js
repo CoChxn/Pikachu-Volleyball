@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { createPlayer, updatePlayer, resetPlayer, trackHitKey, SIDE_LEFT, SIDE_RIGHT } from './player.js';
 import { createBall, updateBall, placeBallForServe } from './ball.js';
 import { resolveBallPlayer } from './physics.js';
+import { randomInt } from './rng.js';
 
 // 경기 흐름 상태
 export const PHASE_SERVING = 'serving'; // 서브 대기 (멈춤, READY)
@@ -12,7 +13,7 @@ export const PHASE_GAME_OVER = 'gameOver'; // 경기 종료
 
 // 게임 상태 전체를 담는 일반 객체를 만든다
 export function createInitialState() {
-  return {
+  const state = {
     tick: 0, // 지금까지 진행한 틱 수
     phase: PHASE_SERVING,
     phaseTicks: 0, // 지금 경기 흐름 상태가 된 뒤 지난 틱 수
@@ -23,7 +24,19 @@ export function createInitialState() {
     players: [createPlayer(SIDE_LEFT), createPlayer(SIDE_RIGHT)], // [1P, 2P]
     ball: createBall(),
     rngSeed: CONFIG.rngInitialSeed, // 난수 상태
+    ai: { boldness: [0, 0], errorX: [0, 0] }, // 라운드마다 바뀌는 AI 성격 [1P, 2P]
   };
+  rollAiTraits(state);
+  return state;
+}
+
+// 라운드마다 AI 성격을 시드 난수로 정한다 (사람이 조작해도 똑같이 뽑아 결과가 일정하게)
+function rollAiTraits(state) {
+  const { maxBoldness, easyErrorRange } = CONFIG.ai;
+  for (const side of [SIDE_LEFT, SIDE_RIGHT]) {
+    state.ai.boldness[side] = randomInt(state, maxBoldness);
+    state.ai.errorX[side] = randomInt(state, easyErrorRange * 2 + 1) - easyErrorRange;
+  }
 }
 
 // 경기 흐름 상태를 바꾼다
@@ -39,6 +52,7 @@ function startRound(state) {
     resetPlayer(player);
   }
   placeBallForServe(state.ball, state.server);
+  rollAiTraits(state);
 }
 
 // 새 경기: 점수 0:0, 1P 서브

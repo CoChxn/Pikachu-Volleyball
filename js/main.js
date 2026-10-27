@@ -1,7 +1,16 @@
 import { CONFIG } from './config.js';
-import { createInitialState, step, TICK_MS } from './game.js';
+import { createInitialState, step, TICK_MS, PHASE_GAME_OVER } from './game.js';
 import { draw } from './render.js';
-import { readInputs, isDebugEnabled, setupDebugThrow, takePendingThrow, getDragPreview } from './input.js';
+import {
+  readInputs,
+  isDebugEnabled,
+  setupDebugThrow,
+  takePendingThrow,
+  getDragPreview,
+  getMode,
+  getAiLevel,
+} from './input.js';
+import { createAiController } from './ai.js';
 import { placeBall } from './ball.js';
 
 const canvas = document.getElementById('game');
@@ -33,6 +42,17 @@ const state = createInitialState();
 // 디버그 모드에서 마우스 드래그로 공 던지기
 setupDebugThrow(canvas);
 
+// CPU가 맡은 쪽의 입력은 키보드 대신 AI에서 가져온다
+const aiControllers = [createAiController(0), createAiController(1)];
+
+// 이번 틱 [1P, 2P] 입력. 경기 종료 화면에서는 다시 하기를 위해 키보드 그대로
+function collectInputs() {
+  const inputs = readInputs();
+  if (state.phase === PHASE_GAME_OVER) return inputs;
+  const mode = getMode();
+  return inputs.map((input, side) => (mode.cpu[side] ? aiControllers[side](state, getAiLevel()) : input));
+}
+
 // 루프 확인용 측정값 (게임 상태가 아님)
 const stats = { ticksPerSecond: 0 };
 let ticksThisSecond = 0;
@@ -59,7 +79,7 @@ function frame(now) {
     const pendingThrow = takePendingThrow();
     if (pendingThrow) placeBall(state.ball, pendingThrow);
 
-    const [input1P, input2P] = readInputs();
+    const [input1P, input2P] = collectInputs();
     step(state, input1P, input2P);
     accumulator -= TICK_MS;
     ticks += 1;
@@ -77,7 +97,13 @@ function frame(now) {
     secondStart = now;
   }
 
-  draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview() });
+  draw(ctx, state, {
+    enabled: isDebugEnabled(),
+    stats,
+    drag: getDragPreview(),
+    mode: getMode(),
+    level: getAiLevel(),
+  });
   requestAnimationFrame(frame);
 }
 

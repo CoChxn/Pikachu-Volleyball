@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { AI_LEVEL_COUNT } from './ai.js';
 
 // 지금 눌려 있는 키들 (e.code 값)
 const pressed = new Set();
@@ -12,10 +13,29 @@ const tapped = new Set();
 // 디버그 모드 켜짐 여부 (게임 상태가 아닌 화면 표시용)
 let debugEnabled = false;
 
+// 조작 모드와 AI 난이도 (게임 상태가 아닌 입력 설정)
+export const MODES = [
+  { name: 'HUMAN vs HUMAN', cpu: [false, false] },
+  { name: 'HUMAN vs CPU', cpu: [false, true] },
+  { name: 'CPU vs CPU', cpu: [true, true] },
+];
+let modeIndex = CONFIG.ai.defaultMode;
+let levelIndex = CONFIG.ai.defaultLevel;
+
 window.addEventListener('keydown', (e) => {
   if (e.code === CONFIG.debug.toggleKey) {
     e.preventDefault();
     if (!e.repeat) debugEnabled = !debugEnabled;
+    return;
+  }
+  if (e.code === CONFIG.ai.modeKey) {
+    e.preventDefault();
+    if (!e.repeat) modeIndex = (modeIndex + 1) % MODES.length;
+    return;
+  }
+  if (e.code === CONFIG.ai.levelKey) {
+    e.preventDefault();
+    if (!e.repeat) levelIndex = (levelIndex + 1) % AI_LEVEL_COUNT;
     return;
   }
   if (!gameKeys.has(e.code)) return;
@@ -54,6 +74,14 @@ export function readInputs() {
 
 export function isDebugEnabled() {
   return debugEnabled;
+}
+
+export function getMode() {
+  return MODES[modeIndex];
+}
+
+export function getAiLevel() {
+  return levelIndex;
 }
 
 // --- 디버그용 공 던지기 (마우스 드래그) ---
