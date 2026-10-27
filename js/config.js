@@ -36,8 +36,24 @@ export const CONFIG = {
     subMessageFont: 'bold 16px monospace',
     subMessageY: 150,
     shadowOffset: 2, // 글자 그림자 거리
-    modeFont: 'bold 12px monospace', // 아래쪽 모드·난이도 표시
-    modeY: 296,
+  },
+
+  // 시작 메뉴
+  menu: {
+    title: 'VOLLEY BALL',
+    titleFont: 'bold 40px monospace',
+    titleY: 80,
+    headingFont: 'bold 16px monospace',
+    headingY: 120,
+    itemFont: 'bold 18px monospace',
+    itemStartY: 160, // 첫 항목 y
+    itemGap: 28, // 항목 사이 간격
+    cursorGapX: 12, // 선택 표시(>)와 항목 글자 사이 거리
+    hintFont: 'bold 11px monospace',
+    hintY: 292,
+    hint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: BACK',
+    overlayAlpha: 0.45, // 메뉴 뒤 경기장을 어둡게
+    defaultLevel: 1, // 난이도 화면의 처음 커서 (0: 쉬움, 1: 보통, 2: 어려움)
   },
 
   // 난수 시작 시드 (0이면 안 됨)
@@ -83,10 +99,6 @@ export const CONFIG = {
 
   // 컴퓨터 AI
   ai: {
-    modeKey: 'F3', // 조작 모드 바꾸기: 사람 vs 사람 → 사람 vs CPU → CPU vs CPU
-    levelKey: 'F4', // 난이도 바꾸기: 쉬움 → 보통 → 어려움
-    defaultMode: 1, // 처음 모드 (0: 사람 vs 사람, 1: 사람 vs CPU, 2: CPU vs CPU)
-    defaultLevel: 1, // 처음 난이도 (0: 쉬움, 1: 보통, 2: 어려움)
     maxPredictTicks: 200, // 공을 미리 굴려 볼 최대 틱 수
     maxBoldness: 5, // 대담함은 0 ~ (이 값 - 1) 중 라운드마다 하나
     boldStepX: 6, // 대담함 1당 기본 위치가 네트 쪽으로 가는 거리
@@ -105,6 +117,7 @@ export const CONFIG = {
   keys: {
     p1: { up: 'KeyR', left: 'KeyD', right: 'KeyG', down: 'KeyF', hit: 'KeyZ' },
     p2: { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', down: 'ArrowDown', hit: 'Enter' },
+    back: 'Escape', // 메뉴 뒤로 가기, 경기 종료 후 메뉴로
   },
 
   // 색상
@@ -127,7 +140,7 @@ export const CONFIG = {
     debugNetTop: '#00c000',
     debugDrag: '#0033cc',
     debugLanding: '#ff0000',
-    modeText: '#1a1a1a',
+    menuSelected: '#ffe04a',
   },
 
   // 디버그 모드

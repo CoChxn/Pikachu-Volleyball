@@ -9,7 +9,6 @@ export const AI_EASY = 0;
 export const AI_NORMAL = 1;
 export const AI_HARD = 2;
 export const AI_LEVEL_NAMES = ['EASY', 'NORMAL', 'HARD'];
-export const AI_LEVEL_COUNT = AI_LEVEL_NAMES.length;
 
 const NO_INPUT = { left: false, right: false, up: false, down: false, hit: false };
 
