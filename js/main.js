@@ -11,6 +11,7 @@ import {
   isMuted,
 } from './input.js';
 import { playEvents, playSound } from './sound.js';
+import { createEffects, updateEffects } from './effects.js';
 import { placeBall } from './ball.js';
 import { createAiController } from './ai.js';
 import {
@@ -54,6 +55,7 @@ const menu = createMenu();
 let state = null; // 경기 중일 때만 게임 상태가 있다
 let settings = null; // 메뉴에서 고른 설정 { cpu: [1P, 2P], level, name }
 let aiControllers = [];
+let effects = createEffects(); // 손맛 연출 (화면 전용)
 let pauseMenu = null; // 일시정지 중일 때만 있다 (게임 상태가 아닌 화면 상태)
 let holdHitUntilRelease = false; // 일시정지 해제 직후: 결정에 쓴 치기 키를 뗄 때까지 경기에 전달하지 않음
 
@@ -62,6 +64,7 @@ function startGame(chosen) {
   settings = chosen;
   state = createInitialState();
   aiControllers = [createAiController(0), createAiController(1)];
+  effects = createEffects();
   pauseMenu = null;
 }
 
@@ -140,6 +143,7 @@ function tick() {
 
   const [input1P, input2P] = collectInputs(keyboardInputs);
   step(state, input1P, input2P);
+  updateEffects(effects, state);
   if (!isMuted()) playEvents(state.events);
 }
 
@@ -187,7 +191,14 @@ function frame(now) {
   }
 
   if (state) {
-    draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview(), settings, muted: isMuted() });
+    draw(ctx, state, {
+      enabled: isDebugEnabled(),
+      stats,
+      drag: getDragPreview(),
+      settings,
+      muted: isMuted(),
+      effects,
+    });
     if (pauseMenu) drawPause(ctx, pauseMenu);
   } else {
     drawMenu(ctx, menu, isMuted());
