@@ -83,43 +83,18 @@ function drawArm(ctx, shoulderX, angle, sleeveColor) {
   return hand;
 }
 
-// 손에 든 소품
-function drawProp(ctx, prop, hand, angle, palette) {
-  const p = CONFIG.teacher.props;
-  if (prop === 'pointer') {
-    // 지시봉: 팔 방향으로 쭉 뻗은 막대 + 빨간 끝
-    const tip = armEnd(hand.x, hand.y, angle, p.pointerLength);
-    ctx.strokeStyle = p.pointerColor;
-    ctx.lineWidth = p.pointerWidth;
-    ctx.beginPath();
-    ctx.moveTo(hand.x, hand.y);
-    ctx.lineTo(tip.x, tip.y);
-    ctx.stroke();
-    ctx.fillStyle = p.pointerTipColor;
-    ctx.beginPath();
-    ctx.arc(tip.x, tip.y, p.pointerTipRadius, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (prop === 'book') {
-    // 출석부: 손 앞의 작은 책
-    ctx.fillStyle = palette.accent;
-    ctx.fillRect(hand.x - p.bookWidth / 2, hand.y - p.bookHeight / 2, p.bookWidth, p.bookHeight);
-    ctx.fillStyle = p.bookPageColor;
-    ctx.fillRect(hand.x - p.bookWidth / 2, hand.y - p.bookHeight / 2, p.bookSpine, p.bookHeight);
-  } else if (prop === 'chalk') {
-    // 분필: 손끝의 짧은 흰 막대
-    const tip = armEnd(hand.x, hand.y, angle, p.chalkLength);
-    ctx.strokeStyle = p.chalkColor;
-    ctx.lineWidth = p.chalkWidth;
-    ctx.beginPath();
-    ctx.moveTo(hand.x, hand.y);
-    ctx.lineTo(tip.x, tip.y);
-    ctx.stroke();
-  }
+// 손에 든 출석부
+function drawBook(ctx, hand, palette) {
+  const b = CONFIG.teacher.book;
   ctx.lineCap = 'butt';
+  ctx.fillStyle = palette.accent;
+  ctx.fillRect(hand.x - b.width / 2, hand.y - b.height / 2, b.width, b.height);
+  ctx.fillStyle = b.pageColor;
+  ctx.fillRect(hand.x - b.width / 2, hand.y - b.height / 2, b.spine, b.height);
 }
 
 // 다리와 몸통 (옷, 칼라, 넥타이)
-function drawBody(ctx, look, palette) {
+function drawBody(ctx, palette) {
   const s = CONFIG.teacher.shape;
   ctx.fillStyle = CONFIG.teacher.shoeColor;
   for (const legX of [-s.legX, s.legX]) {
@@ -143,41 +118,12 @@ function drawBody(ctx, look, palette) {
     ctx.closePath();
     ctx.fill();
   }
-  if (look.tie) {
-    ctx.fillStyle = palette.accent;
-    ctx.fillRect(-s.tieWidth / 2, s.bodyTop + s.collarDepth, s.tieWidth, s.tieLength);
-  }
+  ctx.fillStyle = palette.accent;
+  ctx.fillRect(-s.tieWidth / 2, s.bodyTop + s.collarDepth, s.tieWidth, s.tieLength);
 }
 
-// 머리 뒤쪽 머리카락 (얼굴보다 먼저 그림)
-function drawHairBack(ctx, look, palette) {
-  const s = CONFIG.teacher.shape;
-  const h = CONFIG.teacher.hair;
-  ctx.fillStyle = palette.hair;
-  if (look.hair === 'bob') {
-    // 단발: 뒤통수 쪽으로 내려오는 머리
-    ctx.beginPath();
-    ctx.roundRect(-s.headRadius - h.outline, s.headY - h.bobTop, s.headRadius + h.bobBackWidth, h.bobLength, h.bobCorner);
-    ctx.fill();
-  } else if (look.hair === 'bun') {
-    // 올림머리: 뒤통수 위 동그란 쪽머리
-    ctx.beginPath();
-    ctx.arc(-h.bunX, s.headY - h.bunY, h.bunRadius, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (look.hair === 'curly') {
-    // 뽀글머리: 머리 둘레에 작은 원 여러 개
-    for (const angle of h.curlAngles) {
-      const cx = Math.cos(angle * DEG) * s.headRadius;
-      const cy = s.headY + Math.sin(angle * DEG) * s.headRadius;
-      ctx.beginPath();
-      ctx.arc(cx, cy, h.curlRadius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-// 머리 위쪽 머리카락 (얼굴 위에 덮어 그림, 머리 원 안쪽만)
-function drawHairTop(ctx, look, palette) {
+// 짧은 머리카락 (얼굴 위에 덮어 그림, 머리 원 안쪽만)
+function drawHair(ctx, palette) {
   const s = CONFIG.teacher.shape;
   const h = CONFIG.teacher.hair;
   ctx.save();
@@ -185,7 +131,7 @@ function drawHairTop(ctx, look, palette) {
   ctx.arc(0, s.headY, s.headRadius, 0, Math.PI * 2);
   ctx.clip();
   ctx.fillStyle = palette.hair;
-  const lineY = s.headY - h.hairLine[look.hair];
+  const lineY = s.headY - h.hairLine;
   ctx.fillRect(-s.headRadius, s.headY - s.headRadius, s.headRadius * 2, lineY - (s.headY - s.headRadius));
   // 뒤쪽 옆머리 (귀 쪽)
   ctx.fillRect(-s.headRadius, s.headY - s.headRadius, h.sideWidth, s.headRadius + h.sideLength);
@@ -277,12 +223,11 @@ function drawFace(ctx, pose, palette, blinking) {
 }
 
 // 선생님 한 명 그리기
-// lookIndex: 시안 번호, tick: 깜빡임·걸음용 시간, reaction: 득점 리액션(없으면 null)
-export function drawTeacher(ctx, player, lookIndex, tick, reaction) {
+// tick: 깜빡임·걸음용 시간, reaction: 득점 리액션(없으면 null)
+export function drawTeacher(ctx, player, tick, reaction) {
   const t = CONFIG.teacher;
   const s = t.shape;
-  const look = t.looks[lookIndex];
-  const palette = look.palettes[player.side];
+  const palette = t.palettes[player.side];
   const pose = choosePose(player, reaction);
 
   // 얼굴 방향: 기본은 네트 쪽, 슬라이딩·엎드림은 미끄러진 방향
@@ -314,22 +259,19 @@ export function drawTeacher(ctx, player, lookIndex, tick, reaction) {
   drawArm(ctx, s.shoulderBackX, backAngle, palette.outfit);
   // 엎드린 자세는 앞 팔도 몸 뒤에 (얼굴을 가리지 않게)
   if (flat) {
-    const hand = drawArm(ctx, s.shoulderFrontX, frontAngle, palette.outfit);
-    drawProp(ctx, look.prop, hand, frontAngle, palette);
+    drawBook(ctx, drawArm(ctx, s.shoulderFrontX, frontAngle, palette.outfit), palette);
   }
-  drawBody(ctx, look, palette);
-  drawHairBack(ctx, look, palette);
+  drawBody(ctx, palette);
 
   ctx.fillStyle = t.skin;
   ctx.beginPath();
   ctx.arc(0, s.headY, s.headRadius, 0, Math.PI * 2);
   ctx.fill();
-  drawHairTop(ctx, look, palette);
+  drawHair(ctx, palette);
   drawFace(ctx, pose, palette, blinking);
 
   if (!flat) {
-    const hand = drawArm(ctx, s.shoulderFrontX, frontAngle, palette.outfit);
-    drawProp(ctx, look.prop, hand, frontAngle, palette);
+    drawBook(ctx, drawArm(ctx, s.shoulderFrontX, frontAngle, palette.outfit), palette);
   }
 
   ctx.restore();
