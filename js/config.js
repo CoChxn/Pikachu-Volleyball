@@ -1,7 +1,7 @@
 // 게임의 모든 수치. 조작감은 이 파일만 고쳐서 조절한다.
 export const CONFIG = {
   // 버전 (메뉴 구석에 표시: 브라우저가 새 버전을 실행 중인지 확인용, 업데이트마다 올린다)
-  version: 'v8',
+  version: 'v8.1',
 
   // 논리 해상도 (원작 기준)
   width: 432,
@@ -245,7 +245,16 @@ export const CONFIG = {
     peerLibraryUrl: 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js', // 버전 고정
     idPrefix: 'teacher-volley-', // 방 코드 앞에 붙는 이름 (다른 서비스와 겹치지 않게)
     codeLength: 6, // 방 코드 자리 수 (숫자)
-    inputDelay: 3, // 내 입력을 몇 틱 뒤에 적용할지 (클수록 끊김↓ 반응↓)
+    // 입력 지연: 내 입력을 몇 틱 뒤에 적용할지 (클수록 끊김↓ 반응↓)
+    // 연결 직후 왕복 시간을 재서 자동으로 정한다: 올림((가장 느린 왕복 ÷ 2 + 여유) ÷ 40ms)
+    fixedInputDelay: null, // 숫자를 넣으면 자동 대신 그 값으로 고정 (예: 3)
+    minInputDelay: 1,
+    maxInputDelay: 6,
+    delayMarginMs: 30, // 여유 시간 (통신 시간이 들쭉날쭉한 것 대비)
+    probeCount: 8, // 시작 전 왕복 시간을 몇 번 잴지
+    probeIntervalMs: 100, // 시작 전 재는 간격
+    inputRedundancy: 8, // 입력 메시지마다 최근 몇 틱 입력을 함께 보낼지 (메시지가 사라져도 다음 것으로 채움)
+    statsIntervalMs: 1000, // 화면의 TPS(초당 진행 틱) 갱신 간격
     hashInterval: 25, // 몇 틱마다 상태 요약값을 비교할지
     hashSeed: 2166136261, // 요약값(FNV-1a) 계산용 고정 수
     hashPrime: 16777619,

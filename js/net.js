@@ -65,13 +65,18 @@ export function randomRoomCode() {
   return code;
 }
 
+// 통로 이름: 순서·도착을 보장하는 통로(시작·종료 같은 중요한 메시지)와
+// 순서를 기다리지 않는 빠른 통로(매 틱 입력). 빠른 통로는 메시지 하나가 늦어도 뒤 메시지가 막히지 않는다.
+const CHANNEL_CONTROL = 'control';
+const CHANNEL_FAST = 'fast';
+
 // 연결 하나를 연다. role: 'host'(방 만들기) 또는 'guest'(참가), code: 참가할 방 코드 (방장은 무시)
 // handlers: { onOpen(), onMessage(message), onClose() }
-// 돌려주는 net: { status, error, code, send(message), close() }
+// 돌려주는 net: { status, error, code, send(message, fast), close() }
 export function openConnection(role, code, handlers) {
   // 방장은 새 방 코드를 만든다
   const roomCode = role === 'host' ? randomRoomCode() : code;
-  const net = { status: NET_LOADING, error: null, code: roomCode, peer: null, conn: null };
+  const net = { status: NET_LOADING, error: null, code: roomCode, peer: null, channels: {} };
 
   const fail = (text) => {
     if (net.status === NET_CLOSED) return;
@@ -80,13 +85,19 @@ export function openConnection(role, code, handlers) {
     handlers.onClose();
   };
 
-  // 데이터 통로가 생기면 이벤트 연결
-  const attach = (conn) => {
-    net.conn = conn;
-    conn.on('open', () => {
+  // 두 통로가 모두 열리면 연결 완료
+  const checkOpen = () => {
+    const { control, fast } = net.channels;
+    if (net.status !== NET_OPEN && control?.open && fast?.open) {
       net.status = NET_OPEN;
       handlers.onOpen();
-    });
+    }
+  };
+
+  // 통로가 생기면 이벤트 연결
+  const attach = (conn) => {
+    net.channels[conn.label] = conn;
+    conn.on('open', checkOpen);
     conn.on('data', (message) => handlers.onMessage(message));
     conn.on('close', () => {
       if (net.status === NET_OPEN) {
@@ -105,8 +116,10 @@ export function openConnection(role, code, handlers) {
       net.status = NET_WAITING;
     });
     peer.on('connection', (conn) => {
-      if (net.conn) {
-        conn.close(); // 이미 상대가 있으면 다른 접속은 거절
+      const known = conn.label === CHANNEL_CONTROL || conn.label === CHANNEL_FAST;
+      const otherPeer = Object.values(net.channels).some((c) => c.peer !== conn.peer);
+      if (!known || net.channels[conn.label] || otherPeer) {
+        conn.close(); // 이미 상대가 있거나 모르는 통로면 거절
         return;
       }
       attach(conn);
@@ -123,13 +136,15 @@ export function openConnection(role, code, handlers) {
     });
   };
 
-  // 참가자: 아무 이름으로 서버에 접속한 뒤 방 코드로 연결
+  // 참가자: 아무 이름으로 서버에 접속한 뒤 방 코드로 두 통로를 연다
   const startGuest = (Peer) => {
     const peer = new Peer(serverOptions());
     net.peer = peer;
     net.status = NET_CONNECTING;
     peer.on('open', () => {
-      attach(peer.connect(CONFIG.online.idPrefix + net.code, { reliable: true }));
+      const id = CONFIG.online.idPrefix + net.code;
+      attach(peer.connect(id, { label: CHANNEL_CONTROL, reliable: true }));
+      attach(peer.connect(id, { label: CHANNEL_FAST, reliable: false }));
     });
     peer.on('error', (err) => fail(ERROR_TEXT[err.type] ?? 'CONNECTION ERROR'));
   };
@@ -142,22 +157,27 @@ export function openConnection(role, code, handlers) {
     })
     .catch(() => fail('CANNOT LOAD PEERJS'));
 
-  // 테스트용: 주소에 ?netDelay=100&netJitter=50 을 붙이면 메시지를 일부러 늦게 보낸다 (먼 거리 흉내)
+  // 테스트용: 주소에 ?netDelay=100&netJitter=50&netLoss=0.1 을 붙이면
+  // 메시지를 일부러 늦게 보내고, 빠른 통로 메시지 일부를 버린다 (먼 거리·불안정한 망 흉내)
   const params = new URLSearchParams(window.location.search);
   const testDelay = Number(params.get('netDelay') ?? 0);
   const testJitter = Number(params.get('netJitter') ?? 0);
+  const testLoss = Number(params.get('netLoss') ?? 0);
 
-  net.send = (message) => {
+  // fast: true면 빠른 통로(입력·ping·요약값), 아니면 중요한 메시지 통로
+  net.send = (message, fast = false) => {
     if (net.status !== NET_OPEN) return;
+    const conn = net.channels[fast ? CHANNEL_FAST : CHANNEL_CONTROL];
+    if (fast && Math.random() < testLoss) return;
     if (testDelay || testJitter) {
-      setTimeout(() => net.status === NET_OPEN && net.conn.send(message), testDelay + Math.random() * testJitter);
+      setTimeout(() => net.status === NET_OPEN && conn.send(message), testDelay + Math.random() * testJitter);
     } else {
-      net.conn.send(message);
+      conn.send(message);
     }
   };
   net.close = () => {
     net.status = NET_CLOSED;
-    if (net.conn) net.conn.close();
+    for (const conn of Object.values(net.channels)) conn.close();
     if (net.peer) net.peer.destroy();
   };
   return net;
