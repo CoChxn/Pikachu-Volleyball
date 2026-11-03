@@ -125,12 +125,14 @@ export function drawOnlineLobby(ctx, session) {
   drawText(ctx, m.lobbyHint, centerX, m.hintY, m.hintFont, 'center');
 }
 
-// 온라인 경기 중 표시: 왕복 시간, 입력 지연, 기다리는 중, 어긋남 경고
+// 온라인 경기 중 표시: 왕복 시간, 입력 지연, 실제 초당 진행 틱, 기다린 횟수, 기다리는 중, 어긋남 경고
 export function drawOnlineHud(ctx, session, now) {
   const o = CONFIG.online;
   const centerX = CONFIG.width / 2;
   const ping = session.rtt === null ? '-' : `${session.rtt}ms`;
-  drawText(ctx, `PING ${ping}  DELAY ${o.inputDelay}`, centerX, o.hudY, o.hudFont, 'center');
+  const { tps, waits } = session.stats;
+  const hud = `PING ${ping}  DELAY ${session.inputDelay}  TPS ${tps}  WAIT ${waits}`;
+  drawText(ctx, hud, centerX, o.hudY, o.hudFont, 'center');
   if (session.desync) {
     drawText(ctx, 'DESYNC!', centerX, o.hudY + CONFIG.debug.lineHeight, o.hudFont, 'center', CONFIG.colors.warning);
   }
