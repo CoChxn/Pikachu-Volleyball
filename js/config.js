@@ -79,8 +79,6 @@ export const CONFIG = {
     diveSpeed: 8, // 슬라이딩 중 한 틱에 미끄러지는 거리
     diveJumpSpeed: 5, // 슬라이딩 시작 때 살짝 뜨는 속도
     lyingTicks: 10, // 슬라이딩 후 엎드려 있는 틱 수
-    flatHalfHeight: 16, // 슬라이딩·엎드림 그림의 세로 절반 (그림 전용, 충돌 판정은 그대로)
-    spikeOutlineWidth: 3, // 스파이크 자세 그림의 테두리 두께
   },
 
   // 공
@@ -97,6 +95,155 @@ export const CONFIG = {
     spikeSpeedX: 10, // 스파이크 가로 속도 = (|가로 입력| + 1) × 이 값
     spikeVyMultiplier: 2, // 스파이크 세로 속도 = |세로 속도| × 세로 입력 × 이 값
     netTopBounceDepth: 16, // 공 아랫면이 네트 꼭대기에서 이만큼 안쪽까지면 위로 튕김, 더 깊으면 옆으로 튕김
+  },
+
+  // 선생님 캐릭터 그림 (그림 전용, 충돌 판정은 player의 64×64 사각형 그대로)
+  // 좌표는 캐릭터 중심 기준, +x가 얼굴 방향
+  teacher: {
+    lookKey: 'F3', // 시안 비교용 임시 키 (시안을 고르면 없앤다)
+    lookLabelFont: 'bold 11px monospace',
+    lookLabelY: 14,
+    // 시안: hair(bob 단발 / bun 올림머리 / curly 뽀글 / short 짧은 머리), prop(pointer 지시봉 / book 출석부 / chalk 분필)
+    // palettes: [1P, 2P] 색. accent는 넥타이·출석부 색
+    looks: [
+      {
+        name: 'A1 BOB + POINTER',
+        hair: 'bob',
+        prop: 'pointer',
+        tie: false,
+        palettes: [
+          { hair: '#5a3825', outfit: '#f29cb7', glasses: '#7a3b2e', accent: '#c0392b' },
+          { hair: '#2a2a3a', outfit: '#7fbfe8', glasses: '#2b4a7a', accent: '#2e5fa8' },
+        ],
+      },
+      {
+        name: 'A2 BUN + BOOK',
+        hair: 'bun',
+        prop: 'book',
+        tie: false,
+        palettes: [
+          { hair: '#7a4a2a', outfit: '#f6c86a', glasses: '#8a5a20', accent: '#d9534f' },
+          { hair: '#3a3a3a', outfit: '#9ad3a8', glasses: '#2f6b45', accent: '#3b7dd8' },
+        ],
+      },
+      {
+        name: 'A3 CURLY + CHALK',
+        hair: 'curly',
+        prop: 'chalk',
+        tie: false,
+        palettes: [
+          { hair: '#a0522d', outfit: '#c9a0e8', glasses: '#6a3d8a', accent: '#8e44ad' },
+          { hair: '#444444', outfit: '#f0a070', glasses: '#8a4a20', accent: '#d35400' },
+        ],
+      },
+      {
+        name: 'A4 SHORT + TIE',
+        hair: 'short',
+        prop: 'pointer',
+        tie: true,
+        palettes: [
+          { hair: '#3b2a1a', outfit: '#e8dcc0', glasses: '#333333', accent: '#d9534f' },
+          { hair: '#1e1e28', outfit: '#c8d8e8', glasses: '#333333', accent: '#3b5fa8' },
+        ],
+      },
+    ],
+    skin: '#ffd9b8',
+    shoeColor: '#4a3a30',
+    collarColor: '#ffffff',
+    walkBob: 2, // 걸을 때 들썩이는 높이
+    walkBobTicks: 3, // 들썩임 간격 (틱)
+    sadDropY: 2, // 시무룩할 때 내려앉는 거리
+    blinkInterval: 75, // 깜빡임 주기 (틱)
+    blinkTicks: 3, // 눈 감고 있는 틱 수
+    blinkSideOffset: 37, // 1P와 2P 깜빡임 시간 차이
+    shape: {
+      headRadius: 17,
+      headY: -13, // 머리 중심
+      bodyTop: 3,
+      bodyBottom: 26,
+      bodyHalfWidth: 13,
+      bodyCorner: 6,
+      legX: 6, // 다리 좌우 위치
+      legY: 29,
+      legRx: 5,
+      legRy: 3,
+      shoulderBackX: -6, // 뒤 팔 어깨
+      shoulderFrontX: 6, // 앞 팔 어깨
+      shoulderY: 8,
+      armLength: 13,
+      armWidth: 5,
+      handRadius: 3,
+      collarDepth: 6,
+      collarWidth: 6,
+      tieWidth: 3,
+      tieLength: 10,
+      flatOffsetY: 16, // 엎드릴 때 내려가는 거리
+      flatAngle: 90, // 엎드릴 때 눕는 각도
+    },
+    // 팔 각도(도): 0 아래, 90 앞, 180 위, -90 뒤
+    arms: {
+      stand: 15,
+      walkSwing: 30,
+      swingTicks: 3, // 걸을 때·만세 흔들기 간격 (틱)
+      jump: 125,
+      spikeBack: -40,
+      spikeStart: 140, // 스파이크 시작: 앞-위
+      spikeEnd: 40, // 스파이크 끝: 앞-아래
+      dive: 170, // 엎드린 자세는 몸을 90도 눕힌 뒤의 각도 (팔은 몸 뒤에 그림)
+      lying: 0,
+      cheer: 135,
+      cheerWave: 15,
+      sad: 10,
+    },
+    hair: {
+      outline: 1, // 단발이 머리보다 바깥으로 나오는 정도
+      bobTop: 10,
+      bobLength: 24,
+      bobBackWidth: 6,
+      bobCorner: 5,
+      bunX: 9,
+      bunY: 15,
+      bunRadius: 7,
+      curlAngles: [-170, -140, -110, -80, -50, -20, 160],
+      curlRadius: 6,
+      hairLine: { bob: 5, bun: 7, curly: 8, short: 9 }, // 머리 중심에서 이마선까지 거리
+      sideWidth: 7, // 귀 쪽 옆머리 폭
+      sideLength: 2,
+      fringeX: 6, // 앞머리
+      fringeRx: 7,
+      fringeRy: 3,
+    },
+    face: {
+      eyeX: [3, 12], // 뒤쪽 눈, 앞쪽 눈
+      eyeOffsetY: 1,
+      eyeSize: 2,
+      pupilRadius: 1.5,
+      lineWidth: 1,
+      lineColor: '#3a2a20',
+      glassesRadius: 4,
+      glassesWidth: 1.5,
+      glassesTilt: 12, // 엎드렸을 때 안경 기울기 (도)
+      templeX: -6, // 안경다리 끝
+      mouthX: 9,
+      mouthOffsetY: 8,
+      mouthSize: 3,
+      mouthOpenRadius: 2.5,
+      mouthColor: '#c0504d',
+    },
+    props: {
+      pointerLength: 16,
+      pointerWidth: 2,
+      pointerColor: '#8b5a2b',
+      pointerTipColor: '#e04040',
+      pointerTipRadius: 1.5,
+      bookWidth: 9,
+      bookHeight: 11,
+      bookSpine: 2,
+      bookPageColor: '#ffffff',
+      chalkLength: 5,
+      chalkWidth: 3,
+      chalkColor: '#ffffff',
+    },
   },
 
   // 컴퓨터 AI
@@ -124,9 +271,6 @@ export const CONFIG = {
 
   // 색상
   colors: {
-    player1: '#f5d142',
-    player2: '#f0904a',
-    playerOutline: '#5a3b12',
     sky: '#7ec8f0',
     ground: '#e2b65a',
     groundLine: '#b8862f',

@@ -8,6 +8,7 @@ import {
   takePendingThrow,
   getDragPreview,
   takeBackPressed,
+  getLookIndex,
 } from './input.js';
 import { placeBall } from './ball.js';
 import { createAiController } from './ai.js';
@@ -173,7 +174,13 @@ function frame(now) {
   }
 
   if (state) {
-    draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview(), settings });
+    draw(ctx, state, {
+      enabled: isDebugEnabled(),
+      stats,
+      drag: getDragPreview(),
+      settings,
+      look: getLookIndex(),
+    });
     if (pauseMenu) drawPause(ctx, pauseMenu);
   } else {
     drawMenu(ctx, menu);
