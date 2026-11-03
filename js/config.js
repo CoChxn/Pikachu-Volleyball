@@ -36,6 +36,8 @@ export const CONFIG = {
     subMessageFont: 'bold 16px monospace',
     subMessageY: 150,
     shadowOffset: 2, // 글자 그림자 거리
+    muteFont: 'bold 11px monospace', // 경기 중 음소거 표시
+    muteY: 14,
   },
 
   // 시작 메뉴
@@ -52,6 +54,7 @@ export const CONFIG = {
     hintFont: 'bold 11px monospace',
     hintY: 292,
     hint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: BACK',
+    soundY: 274, // 소리 켜짐/꺼짐 안내 위치
     pauseTitle: 'PAUSE',
     pauseHint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: CONTINUE',
     overlayAlpha: 0.45, // 메뉴 뒤 경기장을 어둡게
@@ -186,6 +189,38 @@ export const CONFIG = {
     },
   },
 
+  // 효과음 (Web Audio API로 생성)
+  // 한 소리는 여러 조각으로: kind 'tone'(음, wave 파형, from→to Hz) 또는 'noise'(잡음, filter Hz)
+  // duration·delay는 초, volume은 0~1
+  sound: {
+    masterVolume: 0.25, // 전체 소리 크기
+    silence: 0.0001, // 소리가 줄어드는 끝 값 (0이면 계산이 안 됨)
+    noiseSeconds: 0.5, // 잡음 소리 재료 길이
+    effects: {
+      bodyHit: [{ kind: 'tone', wave: 'triangle', from: 330, to: 160, duration: 0.09, volume: 0.8 }],
+      spike: [
+        { kind: 'noise', filter: 1800, duration: 0.12, volume: 0.9 },
+        { kind: 'tone', wave: 'square', from: 220, to: 60, duration: 0.15, volume: 0.5 },
+      ],
+      jump: [{ kind: 'tone', wave: 'sine', from: 300, to: 620, duration: 0.1, volume: 0.4 }],
+      dive: [{ kind: 'noise', filter: 900, duration: 0.18, volume: 0.5 }],
+      net: [{ kind: 'tone', wave: 'square', from: 900, to: 700, duration: 0.04, volume: 0.3 }],
+      wall: [{ kind: 'tone', wave: 'square', from: 700, to: 500, duration: 0.04, volume: 0.25 }],
+      score: [
+        { kind: 'tone', wave: 'square', from: 880, to: 880, duration: 0.08, volume: 0.4 },
+        { kind: 'tone', wave: 'square', from: 1320, to: 1320, duration: 0.1, volume: 0.4, delay: 0.09 },
+      ],
+      win: [
+        { kind: 'tone', wave: 'square', from: 523, to: 523, duration: 0.12, volume: 0.4 },
+        { kind: 'tone', wave: 'square', from: 659, to: 659, duration: 0.12, volume: 0.4, delay: 0.13 },
+        { kind: 'tone', wave: 'square', from: 784, to: 784, duration: 0.12, volume: 0.4, delay: 0.26 },
+        { kind: 'tone', wave: 'square', from: 1047, to: 1047, duration: 0.3, volume: 0.4, delay: 0.39 },
+      ],
+      menuMove: [{ kind: 'tone', wave: 'square', from: 600, to: 600, duration: 0.04, volume: 0.3 }],
+      menuSelect: [{ kind: 'tone', wave: 'square', from: 900, to: 1200, duration: 0.08, volume: 0.35 }],
+    },
+  },
+
   // 컴퓨터 AI
   ai: {
     maxPredictTicks: 200, // 공을 미리 굴려 볼 최대 틱 수
@@ -207,6 +242,7 @@ export const CONFIG = {
     p1: { up: 'KeyR', left: 'KeyD', right: 'KeyG', down: 'KeyF', hit: 'KeyZ' },
     p2: { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', down: 'ArrowDown', hit: 'Enter' },
     back: 'Escape', // 메뉴 뒤로 가기, 경기 중 일시정지, 경기 종료 후 메뉴로
+    mute: 'KeyM', // 소리 켜기/끄기
   },
 
   // 색상

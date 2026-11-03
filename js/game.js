@@ -1,7 +1,17 @@
 import { CONFIG } from './config.js';
-import { createPlayer, updatePlayer, resetPlayer, trackHitKey, SIDE_LEFT, SIDE_RIGHT } from './player.js';
+import {
+  createPlayer,
+  updatePlayer,
+  resetPlayer,
+  trackHitKey,
+  SIDE_LEFT,
+  SIDE_RIGHT,
+  PLAYER_STANDING,
+  PLAYER_JUMPING,
+  PLAYER_DIVING,
+} from './player.js';
 import { createBall, updateBall, placeBallForServe } from './ball.js';
-import { resolveBallPlayer } from './physics.js';
+import { resolveBallPlayer, EVENT_JUMP, EVENT_DIVE, EVENT_SCORE, EVENT_WIN } from './physics.js';
 import { randomInt } from './rng.js';
 
 // 경기 흐름 상태
@@ -25,6 +35,7 @@ export function createInitialState() {
     ball: createBall(),
     rngSeed: CONFIG.rngInitialSeed, // 난수 상태
     ai: { boldness: [0, 0], errorX: [0, 0] }, // 라운드마다 바뀌는 AI 성격 [1P, 2P]
+    events: [], // 이번 틱에 일어난 사건 (효과음용, 매 틱 새로 시작)
   };
   rollAiTraits(state);
   return state;
@@ -65,8 +76,14 @@ function startMatch(state) {
 
 // 캐릭터·공·충돌을 한 틱 진행한다. 공이 바닥에 닿았으면 true
 function simulate(state, inputs) {
-  state.players.forEach((player, i) => updatePlayer(player, inputs[i]));
-  const touchedGround = updateBall(state.ball);
+  state.players.forEach((player, i) => {
+    const before = player.state;
+    updatePlayer(player, inputs[i]);
+    // 서 있다가 뛰거나 슬라이딩을 시작했으면 기록
+    if (before === PLAYER_STANDING && player.state === PLAYER_JUMPING) state.events.push(EVENT_JUMP);
+    if (before === PLAYER_STANDING && player.state === PLAYER_DIVING) state.events.push(EVENT_DIVE);
+  });
+  const touchedGround = updateBall(state.ball, state.events);
   for (const player of state.players) {
     resolveBallPlayer(state, player);
   }
@@ -87,8 +104,10 @@ function scorePoint(state) {
   if (state.score[scorer] >= state.winScore) {
     state.winner = scorer;
     setPhase(state, PHASE_GAME_OVER);
+    state.events.push(EVENT_WIN);
   } else {
     setPhase(state, PHASE_SCORED);
+    state.events.push(EVENT_SCORE);
   }
 }
 
@@ -98,6 +117,7 @@ export function step(state, input1P, input2P) {
   const m = CONFIG.match;
   state.tick += 1;
   state.phaseTicks += 1;
+  state.events = [];
 
   switch (state.phase) {
     case PHASE_SERVING:
