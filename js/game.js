@@ -8,10 +8,20 @@ import {
   SIDE_RIGHT,
   PLAYER_STANDING,
   PLAYER_JUMPING,
+  PLAYER_SPIKING,
   PLAYER_DIVING,
+  PLAYER_LYING,
 } from './player.js';
 import { createBall, updateBall, placeBallForServe } from './ball.js';
-import { resolveBallPlayer, EVENT_JUMP, EVENT_DIVE, EVENT_SCORE, EVENT_WIN } from './physics.js';
+import {
+  resolveBallPlayer,
+  record,
+  EVENT_JUMP,
+  EVENT_DIVE,
+  EVENT_LAND,
+  EVENT_SCORE,
+  EVENT_WIN,
+} from './physics.js';
 import { randomInt } from './rng.js';
 
 // 경기 흐름 상태
@@ -79,9 +89,17 @@ function simulate(state, inputs) {
   state.players.forEach((player, i) => {
     const before = player.state;
     updatePlayer(player, inputs[i]);
-    // 서 있다가 뛰거나 슬라이딩을 시작했으면 기록
-    if (before === PLAYER_STANDING && player.state === PLAYER_JUMPING) state.events.push(EVENT_JUMP);
-    if (before === PLAYER_STANDING && player.state === PLAYER_DIVING) state.events.push(EVENT_DIVE);
+    // 서 있다가 뛰거나 슬라이딩을 시작했으면, 공중에서 내려왔으면 기록 (위치는 발밑)
+    const feetY = CONFIG.groundY;
+    if (before === PLAYER_STANDING && player.state === PLAYER_JUMPING) {
+      record(state.events, EVENT_JUMP, player.x, feetY);
+    }
+    if (before === PLAYER_STANDING && player.state === PLAYER_DIVING) {
+      record(state.events, EVENT_DIVE, player.x, feetY);
+    }
+    const wasInAir = before === PLAYER_JUMPING || before === PLAYER_SPIKING || before === PLAYER_DIVING;
+    const landed = player.state === PLAYER_STANDING || player.state === PLAYER_LYING;
+    if (wasInAir && landed) record(state.events, EVENT_LAND, player.x, feetY);
   });
   const touchedGround = updateBall(state.ball, state.events);
   for (const player of state.players) {
@@ -104,10 +122,10 @@ function scorePoint(state) {
   if (state.score[scorer] >= state.winScore) {
     state.winner = scorer;
     setPhase(state, PHASE_GAME_OVER);
-    state.events.push(EVENT_WIN);
+    record(state.events, EVENT_WIN, state.ball.x, CONFIG.groundY);
   } else {
     setPhase(state, PHASE_SCORED);
-    state.events.push(EVENT_SCORE);
+    record(state.events, EVENT_SCORE, state.ball.x, CONFIG.groundY);
   }
 }
 

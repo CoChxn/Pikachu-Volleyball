@@ -11,10 +11,13 @@ export const EVENT_JUMP = 'jump';
 export const EVENT_DIVE = 'dive';
 export const EVENT_SCORE = 'score';
 export const EVENT_WIN = 'win';
+export const EVENT_GROUND = 'ground'; // 공이 바닥에 닿음
+export const EVENT_LAND = 'land'; // 캐릭터 착지
 
-// events 목록이 있으면 사건을 기록 (AI 예측처럼 목록 없이 부르면 기록 안 함)
-function record(events, name) {
-  if (events) events.push(name);
+// events 목록이 있으면 사건 { name, x, y }를 기록 (AI 예측처럼 목록 없이 부르면 기록 안 함)
+// x, y: 연출이 나타날 위치
+export function record(events, name, x, y) {
+  if (events) events.push({ name, x, y });
 }
 
 // 공-벽, 공-천장, 공-바닥: 넘어갔으면 경계로 되돌리고 속도 방향을 뒤집는다
@@ -27,13 +30,13 @@ export function resolveBallWalls(ball, events = null) {
   if (ball.x < radius) {
     ball.x = radius;
     ball.vx = Math.abs(ball.vx);
-    record(events, EVENT_WALL);
+    record(events, EVENT_WALL, ball.x, ball.y);
   }
   // 오른쪽 벽
   if (ball.x > width - radius) {
     ball.x = width - radius;
     ball.vx = -Math.abs(ball.vx);
-    record(events, EVENT_WALL);
+    record(events, EVENT_WALL, ball.x, ball.y);
   }
   // 천장 (원작: 반쯤 나갔다가 위로 가던 힘을 잃고 떨어짐)
   if (ball.y < ceilingY && ball.vy < 0) {
@@ -43,6 +46,7 @@ export function resolveBallWalls(ball, events = null) {
   if (ball.y > groundY - radius) {
     ball.y = groundY - radius;
     ball.vy = -Math.abs(ball.vy);
+    record(events, EVENT_GROUND, ball.x, groundY);
     return true;
   }
   return false;
@@ -64,7 +68,7 @@ export function resolveBallNet(ball, prevX, events = null) {
   const crossed = prevX < netCenterX !== ball.x < netCenterX;
   const overlapping = Math.abs(ball.x - netCenterX) < reachX;
   if (!crossed && !overlapping) return;
-  record(events, EVENT_NET);
+  record(events, EVENT_NET, ball.x, ball.y);
 
   if (ball.y <= topBandBottomY) {
     // 꼭대기: 위로 튕김
@@ -112,9 +116,9 @@ export function resolveBallPlayer(state, player) {
     const v = spikeVelocity(player.side, player.inputX, player.inputY, ball.vy);
     ball.vx = v.vx;
     ball.vy = v.vy;
-    record(state.events, EVENT_SPIKE);
+    record(state.events, EVENT_SPIKE, ball.x, ball.y);
   } else {
-    record(state.events, EVENT_BODY_HIT);
+    record(state.events, EVENT_BODY_HIT, ball.x, ball.y);
   }
 }
 

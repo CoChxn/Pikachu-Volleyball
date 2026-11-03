@@ -1,5 +1,8 @@
 // 게임의 모든 수치. 조작감은 이 파일만 고쳐서 조절한다.
 export const CONFIG = {
+  // 버전 (메뉴 구석에 표시: 브라우저가 새 버전을 실행 중인지 확인용, 업데이트마다 올린다)
+  version: 'v7-4',
+
   // 논리 해상도 (원작 기준)
   width: 432,
   height: 304,
@@ -38,6 +41,8 @@ export const CONFIG = {
     shadowOffset: 2, // 글자 그림자 거리
     muteFont: 'bold 11px monospace', // 경기 중 음소거 표시
     muteY: 14,
+    versionFont: 'bold 10px monospace', // 메뉴 구석 버전 표시
+    versionMargin: 4,
   },
 
   // 시작 메뉴
@@ -187,6 +192,17 @@ export const CONFIG = {
       spine: 2, // 흰 책장 폭
       pageColor: '#ffffff',
     },
+  },
+
+  // 손맛 연출 (화면 전용, 단위: 틱·픽셀)
+  effects: {
+    ring: { ticks: 6, smallFrom: 6, smallTo: 22, bigFrom: 10, bigTo: 40, width: 2, color: '#ffffff' }, // 타격 원
+    star: { count: 8, inner: 12, outerFrom: 18, outerTo: 34, width: 2, color: '#fff3a0' }, // 스파이크 별빛 선
+    trail: { minSpeed: 15, length: 4, alpha: 0.35 }, // 공 잔상: 이 속도 이상일 때 몇 개를 얼마나 진하게
+    shake: { spikeTicks: 6, spikePower: 2, scoreTicks: 8, scorePower: 3 }, // 화면 흔들림 (틱, 픽셀)
+    dust: { count: 6, speed: 2, gravity: 0.25, ticks: 10, radius: 2, angleFrom: 200, angleTo: 340, color: '#b8862f' }, // 먼지
+    ball: { spinPerSpeed: 6, stripeColor: '#3a6fd8', stripeWidth: 2, stripeBend: 8, stripeCount: 3 }, // 공 회전 무늬 (가로 속도 1당 회전 각도)
+    scorePop: { ticks: 12, scale: 0.6 }, // 점수 튀어오름: 틱, 최대 커지는 비율
   },
 
   // 효과음 (Web Audio API로 생성)

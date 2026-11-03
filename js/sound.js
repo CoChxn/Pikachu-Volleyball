@@ -76,7 +76,7 @@ export function playSound(name) {
 
 // 이번 틱의 사건들을 소리로
 export function playEvents(events) {
-  for (const name of events) {
-    playSound(name);
+  for (const event of events) {
+    playSound(event.name);
   }
 }

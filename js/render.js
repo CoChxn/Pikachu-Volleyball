@@ -1,18 +1,32 @@
 import { CONFIG } from './config.js';
 import { PHASE_SERVING, PHASE_SCORED, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
 import { drawTeacher, REACTION_CHEER, REACTION_SAD } from './sprites.js';
+import { shakeOffset } from './effects.js';
 import { predictBall } from './ai.js';
 import { MENU_SCREENS, PAUSE_ITEMS } from './menu.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
-// debug: { enabled, stats, drag, settings, muted } 화면 표시용 정보
+// debug: { enabled, stats, drag, settings, muted, effects } 화면 표시용 정보
 export function draw(ctx, state, debug) {
+  const fx = debug.effects;
+  const offset = shakeOffset(fx);
+  // 흔들려서 비는 가장자리가 지난 화면으로 남지 않게 먼저 칠한다
+  ctx.fillStyle = CONFIG.colors.ground;
+  ctx.fillRect(0, 0, CONFIG.width, CONFIG.height);
+  ctx.save();
+  ctx.translate(offset.x, offset.y); // 화면 흔들림
+
   drawCourt(ctx);
+  drawDust(ctx, fx);
   for (const player of state.players) {
     drawTeacher(ctx, player, state.tick, reactionOf(state, player.side));
   }
-  drawBall(ctx, state.ball);
-  drawScore(ctx, state);
+  drawTrail(ctx, fx);
+  drawBall(ctx, state.ball, fx.ballAngle);
+  drawRings(ctx, fx);
+  drawScore(ctx, state, fx);
+  ctx.restore();
+
   drawFade(ctx, state);
   drawMessage(ctx, state);
   if (debug.muted) {
@@ -53,6 +67,10 @@ export function drawMenu(ctx, menu, muted) {
   drawMenuItems(ctx, items, menu.cursor);
   drawText(ctx, m.hint, centerX, m.hintY, m.hintFont, 'center');
   drawText(ctx, `M: SOUND ${muted ? 'OFF' : 'ON'}`, centerX, m.soundY, m.hintFont, 'center');
+
+  // 오른쪽 아래 구석에 버전
+  const { versionFont, versionMargin } = CONFIG.ui;
+  drawText(ctx, CONFIG.version, CONFIG.width - versionMargin, CONFIG.height - versionMargin, versionFont, 'right');
 }
 
 // 일시정지: 멈춘 경기 화면 위에 어둡게 덮고 항목 표시
@@ -120,15 +138,99 @@ function reactionOf(state, side) {
   return null;
 }
 
-// 공 임시 그림
-function drawBall(ctx, ball) {
+// 배구공: 흰 공에 휘어진 줄무늬, angle(도)만큼 회전
+function drawBall(ctx, ball, angle) {
   const { colors } = CONFIG;
+  const { radius } = CONFIG.ball;
+  const b = CONFIG.effects.ball;
+
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate((angle * Math.PI) / 180);
   ctx.fillStyle = colors.ball;
-  ctx.strokeStyle = colors.ballOutline;
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, CONFIG.ball.radius, 0, Math.PI * 2);
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.fill();
+
+  // 줄무늬: 중심에서 같은 간격으로 휘어져 나가는 곡선
+  ctx.save();
+  ctx.clip();
+  ctx.strokeStyle = b.stripeColor;
+  ctx.lineWidth = b.stripeWidth;
+  for (let i = 0; i < b.stripeCount; i++) {
+    ctx.rotate((Math.PI * 2) / b.stripeCount);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(b.stripeBend, -radius / 2, 0, -radius);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.strokeStyle = colors.ballOutline;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.restore();
+}
+
+// 공 잔상: 오래된 것일수록 옅게
+function drawTrail(ctx, fx) {
+  const { radius } = CONFIG.ball;
+  const t = CONFIG.effects.trail;
+  fx.trail.forEach((pos, i) => {
+    ctx.globalAlpha = (t.alpha * (i + 1)) / fx.trail.length;
+    ctx.fillStyle = CONFIG.colors.ball;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+// 타격 원 (스파이크는 크게 + 별빛 선)
+function drawRings(ctx, fx) {
+  const r = CONFIG.effects.ring;
+  const s = CONFIG.effects.star;
+  for (const ring of fx.rings) {
+    const progress = ring.age / r.ticks; // 0 → 1
+    ctx.globalAlpha = 1 - progress;
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = r.width;
+    const from = ring.big ? r.bigFrom : r.smallFrom;
+    const to = ring.big ? r.bigTo : r.smallTo;
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, from + (to - from) * progress, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (ring.big) {
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.width;
+      const outer = s.outerFrom + (s.outerTo - s.outerFrom) * progress;
+      for (let i = 0; i < s.count; i++) {
+        const a = (Math.PI * 2 * i) / s.count;
+        ctx.beginPath();
+        ctx.moveTo(ring.x + Math.cos(a) * s.inner, ring.y + Math.sin(a) * s.inner);
+        ctx.lineTo(ring.x + Math.cos(a) * outer, ring.y + Math.sin(a) * outer);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 1;
+}
+
+// 먼지 알갱이: 시간이 갈수록 옅게
+function drawDust(ctx, fx) {
+  const d = CONFIG.effects.dust;
+  ctx.fillStyle = d.color;
+  for (const p of fx.dust) {
+    ctx.globalAlpha = 1 - p.age / d.ticks;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, d.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 // 그림자 있는 글자. align: 'left' | 'center' | 'right'
@@ -145,11 +247,22 @@ function drawText(ctx, text, x, y, font, align, color = CONFIG.colors.uiText) {
 }
 
 // 위쪽 양 끝에 점수
-function drawScore(ctx, state) {
+// 점수가 오르면 잠깐 커졌다 돌아옴
+function drawScore(ctx, state, fx) {
   const { width } = CONFIG;
   const { scoreFont, scoreMarginX, scoreY } = CONFIG.ui;
-  drawText(ctx, String(state.score[0]), scoreMarginX, scoreY, scoreFont, 'left');
-  drawText(ctx, String(state.score[1]), width - scoreMarginX, scoreY, scoreFont, 'right');
+  const pop = CONFIG.effects.scorePop;
+  const xs = [scoreMarginX, width - scoreMarginX];
+  const aligns = ['left', 'right'];
+
+  state.score.forEach((score, side) => {
+    const scale = 1 + (pop.scale * fx.scorePop[side]) / pop.ticks;
+    ctx.save();
+    ctx.translate(xs[side], scoreY);
+    ctx.scale(scale, scale);
+    drawText(ctx, String(score), 0, 0, scoreFont, aligns[side]);
+    ctx.restore();
+  });
 }
 
 // 라운드 사이 어두워지기·밝아지기
