@@ -18,15 +18,16 @@ export function placeBallForServe(ball, server) {
 }
 
 // 한 틱 동안 중력 → 이동 → 충돌 처리. 바닥에 닿았으면 true
-export function updateBall(ball) {
+// events: 사건을 기록할 목록 (AI 예측처럼 기록이 필요 없으면 생략)
+export function updateBall(ball, events = null) {
   const prevX = ball.x;
 
   ball.vy += CONFIG.ball.gravity;
   ball.x += ball.vx;
   ball.y += ball.vy;
 
-  resolveBallNet(ball, prevX);
-  return resolveBallWalls(ball);
+  resolveBallNet(ball, prevX, events);
+  return resolveBallWalls(ball, events);
 }
 
 // 디버그용: 공을 원하는 위치·속도로 놓는다

@@ -5,7 +5,7 @@ import { predictBall } from './ai.js';
 import { MENU_SCREENS, PAUSE_ITEMS } from './menu.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
-// debug: { enabled, stats, drag, settings } 화면 표시용 정보
+// debug: { enabled, stats, drag, settings, muted } 화면 표시용 정보
 export function draw(ctx, state, debug) {
   drawCourt(ctx);
   for (const player of state.players) {
@@ -15,6 +15,9 @@ export function draw(ctx, state, debug) {
   drawScore(ctx, state);
   drawFade(ctx, state);
   drawMessage(ctx, state);
+  if (debug.muted) {
+    drawText(ctx, 'MUTE (M)', CONFIG.width / 2, CONFIG.ui.muteY, CONFIG.ui.muteFont, 'center');
+  }
 
   if (debug.enabled) {
     drawDebug(ctx, state, debug);
@@ -37,7 +40,7 @@ function drawCourt(ctx) {
 }
 
 // 시작 메뉴: 어두운 경기장 위에 제목과 항목
-export function drawMenu(ctx, menu) {
+export function drawMenu(ctx, menu, muted) {
   const m = CONFIG.menu;
   const centerX = CONFIG.width / 2;
 
@@ -49,6 +52,7 @@ export function drawMenu(ctx, menu) {
   if (heading) drawText(ctx, heading, centerX, m.headingY, m.headingFont, 'center');
   drawMenuItems(ctx, items, menu.cursor);
   drawText(ctx, m.hint, centerX, m.hintY, m.hintFont, 'center');
+  drawText(ctx, `M: SOUND ${muted ? 'OFF' : 'ON'}`, centerX, m.soundY, m.hintFont, 'center');
 }
 
 // 일시정지: 멈춘 경기 화면 위에 어둡게 덮고 항목 표시

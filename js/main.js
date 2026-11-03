@@ -8,7 +8,9 @@ import {
   takePendingThrow,
   getDragPreview,
   takeBackPressed,
+  isMuted,
 } from './input.js';
+import { playEvents, playSound } from './sound.js';
 import { placeBall } from './ball.js';
 import { createAiController } from './ai.js';
 import {
@@ -94,7 +96,9 @@ function tick() {
   const backPressed = takeBackPressed();
 
   if (!state) {
+    const before = { screen: menu.screen, cursor: menu.cursor };
     const chosen = updateMenu(menu, keyboardInputs, backPressed);
+    playMenuSound(before, menu, chosen);
     if (chosen) startGame(chosen);
     return;
   }
@@ -107,7 +111,9 @@ function tick() {
 
   // 일시정지 중: 경기는 멈추고 메뉴만 처리
   if (pauseMenu) {
+    const before = { screen: null, cursor: pauseMenu.cursor };
     const choice = updatePauseMenu(pauseMenu, keyboardInputs, backPressed);
+    playMenuSound(before, { screen: null, cursor: pauseMenu.cursor }, choice);
     if (choice === PAUSE_TO_MENU) {
       backToMenu(keyboardInputs);
     } else if (choice) {
@@ -134,6 +140,14 @@ function tick() {
 
   const [input1P, input2P] = collectInputs(keyboardInputs);
   step(state, input1P, input2P);
+  if (!isMuted()) playEvents(state.events);
+}
+
+// 메뉴 효과음: 고르거나 화면이 바뀌면 "띵", 커서만 움직이면 "삑"
+function playMenuSound(before, after, chosen) {
+  if (isMuted()) return;
+  if (chosen || before.screen !== after.screen) playSound('menuSelect');
+  else if (before.cursor !== after.cursor) playSound('menuMove');
 }
 
 // 루프 확인용 측정값 (게임 상태가 아님)
@@ -173,10 +187,10 @@ function frame(now) {
   }
 
   if (state) {
-    draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview(), settings });
+    draw(ctx, state, { enabled: isDebugEnabled(), stats, drag: getDragPreview(), settings, muted: isMuted() });
     if (pauseMenu) drawPause(ctx, pauseMenu);
   } else {
-    drawMenu(ctx, menu);
+    drawMenu(ctx, menu, isMuted());
   }
   requestAnimationFrame(frame);
 }

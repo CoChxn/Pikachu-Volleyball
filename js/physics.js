@@ -2,9 +2,24 @@ import { CONFIG } from './config.js';
 import { randomInt } from './rng.js';
 import { SIDE_LEFT, PLAYER_SPIKING } from './player.js';
 
+// 이번 틱에 일어난 사건 이름 (state.events에 기록, 효과음이 읽는다)
+export const EVENT_BODY_HIT = 'bodyHit';
+export const EVENT_SPIKE = 'spike';
+export const EVENT_NET = 'net';
+export const EVENT_WALL = 'wall';
+export const EVENT_JUMP = 'jump';
+export const EVENT_DIVE = 'dive';
+export const EVENT_SCORE = 'score';
+export const EVENT_WIN = 'win';
+
+// events 목록이 있으면 사건을 기록 (AI 예측처럼 목록 없이 부르면 기록 안 함)
+function record(events, name) {
+  if (events) events.push(name);
+}
+
 // 공-벽, 공-천장, 공-바닥: 넘어갔으면 경계로 되돌리고 속도 방향을 뒤집는다
 // 바닥에 닿았으면 true
-export function resolveBallWalls(ball) {
+export function resolveBallWalls(ball, events = null) {
   const { width, groundY } = CONFIG;
   const { radius, ceilingY, ceilingBounceVy } = CONFIG.ball;
 
@@ -12,11 +27,13 @@ export function resolveBallWalls(ball) {
   if (ball.x < radius) {
     ball.x = radius;
     ball.vx = Math.abs(ball.vx);
+    record(events, EVENT_WALL);
   }
   // 오른쪽 벽
   if (ball.x > width - radius) {
     ball.x = width - radius;
     ball.vx = -Math.abs(ball.vx);
+    record(events, EVENT_WALL);
   }
   // 천장 (원작: 반쯤 나갔다가 위로 가던 힘을 잃고 떨어짐)
   if (ball.y < ceilingY && ball.vy < 0) {
@@ -32,7 +49,7 @@ export function resolveBallWalls(ball) {
 }
 
 // 공-네트: 꼭대기 띠에 닿으면 위로, 그보다 아래면 원래 있던 쪽으로 튕긴다
-export function resolveBallNet(ball, prevX) {
+export function resolveBallNet(ball, prevX, events = null) {
   const { width, netWidth, netTopY } = CONFIG;
   const { radius, netTopBounceDepth } = CONFIG.ball;
 
@@ -47,6 +64,7 @@ export function resolveBallNet(ball, prevX) {
   const crossed = prevX < netCenterX !== ball.x < netCenterX;
   const overlapping = Math.abs(ball.x - netCenterX) < reachX;
   if (!crossed && !overlapping) return;
+  record(events, EVENT_NET);
 
   if (ball.y <= topBandBottomY) {
     // 꼭대기: 위로 튕김
@@ -94,6 +112,9 @@ export function resolveBallPlayer(state, player) {
     const v = spikeVelocity(player.side, player.inputX, player.inputY, ball.vy);
     ball.vx = v.vx;
     ball.vy = v.vy;
+    record(state.events, EVENT_SPIKE);
+  } else {
+    record(state.events, EVENT_BODY_HIT);
   }
 }
 
