@@ -12,6 +12,9 @@ const tapped = new Set();
 // 디버그 모드 켜짐 여부 (게임 상태가 아닌 화면 표시용)
 let debugEnabled = false;
 
+// 캐릭터 시안 번호 (시안 비교용 임시, 화면 표시용)
+let lookIndex = 0;
+
 // 뒤로 가기 키가 눌렸는지 (한 번 꺼내 가면 지워짐)
 let backTapped = false;
 
@@ -19,6 +22,11 @@ window.addEventListener('keydown', (e) => {
   if (e.code === CONFIG.debug.toggleKey) {
     e.preventDefault();
     if (!e.repeat) debugEnabled = !debugEnabled;
+    return;
+  }
+  if (e.code === CONFIG.teacher.lookKey) {
+    e.preventDefault();
+    if (!e.repeat) lookIndex = (lookIndex + 1) % CONFIG.teacher.looks.length;
     return;
   }
   if (e.code === CONFIG.keys.back) {
@@ -67,6 +75,10 @@ export function readInputs() {
 
 export function isDebugEnabled() {
   return debugEnabled;
+}
+
+export function getLookIndex() {
+  return lookIndex;
 }
 
 // 매 틱 호출: 지난 틱 이후 뒤로 가기 키가 눌렸는지

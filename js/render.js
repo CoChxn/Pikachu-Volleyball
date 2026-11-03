@@ -1,20 +1,21 @@
 import { CONFIG } from './config.js';
-import { SIDE_LEFT, PLAYER_SPIKING, PLAYER_DIVING, PLAYER_LYING } from './player.js';
-import { PHASE_SERVING, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
+import { PHASE_SERVING, PHASE_SCORED, PHASE_FADE_OUT, PHASE_GAME_OVER } from './game.js';
+import { drawTeacher, REACTION_CHEER, REACTION_SAD } from './sprites.js';
 import { predictBall } from './ai.js';
 import { MENU_SCREENS, PAUSE_ITEMS } from './menu.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
-// debug: { enabled, stats, drag, settings } 화면 표시용 정보
+// debug: { enabled, stats, drag, settings, look } 화면 표시용 정보
 export function draw(ctx, state, debug) {
   drawCourt(ctx);
   for (const player of state.players) {
-    drawPlayer(ctx, player);
+    drawTeacher(ctx, player, debug.look, state.tick, reactionOf(state, player.side));
   }
   drawBall(ctx, state.ball);
   drawScore(ctx, state);
   drawFade(ctx, state);
   drawMessage(ctx, state);
+  drawLookLabel(ctx, debug.look);
 
   if (debug.enabled) {
     drawDebug(ctx, state, debug);
@@ -105,25 +106,21 @@ function drawNet(ctx) {
   ctx.fillRect(netX, netTopY, netWidth, netCapHeight);
 }
 
-// 캐릭터 임시 그림: 몸 크기에 맞춘 타원 (진짜 그래픽은 7단계)
-// 슬라이딩·엎드림은 납작하게, 스파이크는 테두리를 굵게
-function drawPlayer(ctx, player) {
-  const { halfWidth, halfHeight, flatHalfHeight, spikeOutlineWidth } = CONFIG.player;
-  const { colors } = CONFIG;
+// 득점 리액션: 득점 연출·경기 종료 때 이긴 쪽은 만세, 진 쪽은 시무룩
+function reactionOf(state, side) {
+  if (state.phase === PHASE_SCORED || state.phase === PHASE_FADE_OUT) {
+    return side === state.server ? REACTION_CHEER : REACTION_SAD;
+  }
+  if (state.phase === PHASE_GAME_OVER) {
+    return side === state.winner ? REACTION_CHEER : REACTION_SAD;
+  }
+  return null;
+}
 
-  const flat = player.state === PLAYER_DIVING || player.state === PLAYER_LYING;
-  const drawHalfHeight = flat ? flatHalfHeight : halfHeight;
-  // 납작할 때는 발이 바닥에 붙어 있도록 중심을 내린다
-  const drawY = player.y + halfHeight - drawHalfHeight;
-
-  ctx.fillStyle = player.side === SIDE_LEFT ? colors.player1 : colors.player2;
-  ctx.strokeStyle = colors.playerOutline;
-  ctx.lineWidth = player.state === PLAYER_SPIKING ? spikeOutlineWidth : 1;
-  ctx.beginPath();
-  ctx.ellipse(player.x, drawY, halfWidth, drawHalfHeight, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-  ctx.lineWidth = 1;
+// 시안 비교용 임시 표시: 위쪽 가운데에 시안 이름
+function drawLookLabel(ctx, look) {
+  const t = CONFIG.teacher;
+  drawText(ctx, `${t.looks[look].name}  [${t.lookKey}]`, CONFIG.width / 2, t.lookLabelY, t.lookLabelFont, 'center');
 }
 
 // 공 임시 그림
