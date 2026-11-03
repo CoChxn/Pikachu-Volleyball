@@ -32,7 +32,8 @@ export const PHASE_FADE_OUT = 'fadeOut'; // 어두워진 뒤 리셋
 export const PHASE_GAME_OVER = 'gameOver'; // 경기 종료
 
 // 게임 상태 전체를 담는 일반 객체를 만든다
-export function createInitialState() {
+// seed: 난수 시작 시드 (온라인은 방장이 정한 값, 아니면 기본값)
+export function createInitialState(seed = CONFIG.rngInitialSeed) {
   const state = {
     tick: 0, // 지금까지 진행한 틱 수
     phase: PHASE_SERVING,
@@ -43,7 +44,7 @@ export function createInitialState() {
     winScore: CONFIG.winScore, // 승리 점수
     players: [createPlayer(SIDE_LEFT), createPlayer(SIDE_RIGHT)], // [1P, 2P]
     ball: createBall(),
-    rngSeed: CONFIG.rngInitialSeed, // 난수 상태
+    rngSeed: seed, // 난수 상태
     ai: { boldness: [0, 0], errorX: [0, 0] }, // 라운드마다 바뀌는 AI 성격 [1P, 2P]
     events: [], // 이번 틱에 일어난 사건 (효과음용, 매 틱 새로 시작)
   };

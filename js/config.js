@@ -1,7 +1,7 @@
 // 게임의 모든 수치. 조작감은 이 파일만 고쳐서 조절한다.
 export const CONFIG = {
   // 버전 (메뉴 구석에 표시: 브라우저가 새 버전을 실행 중인지 확인용, 업데이트마다 올린다)
-  version: 'v7-4.1',
+  version: 'v8',
 
   // 논리 해상도 (원작 기준)
   width: 432,
@@ -60,6 +60,9 @@ export const CONFIG = {
     hintY: 292,
     hint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: BACK',
     soundY: 274, // 소리 켜짐/꺼짐 안내 위치
+    joinHint: '0-9: TYPE   BACKSPACE: DELETE   Z/ENTER: JOIN',
+    lobbyHint: 'ESC: CANCEL',
+    leaveTitle: 'LEAVE GAME?',
     pauseTitle: 'PAUSE',
     pauseHint: 'UP/DOWN: SELECT   Z/ENTER: OK   ESC: CONTINUE',
     overlayAlpha: 0.45, // 메뉴 뒤 경기장을 어둡게
@@ -237,6 +240,23 @@ export const CONFIG = {
     },
   },
 
+  // 온라인 대전 (PeerJS + 락스텝)
+  online: {
+    peerLibraryUrl: 'https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js', // 버전 고정
+    idPrefix: 'teacher-volley-', // 방 코드 앞에 붙는 이름 (다른 서비스와 겹치지 않게)
+    codeLength: 6, // 방 코드 자리 수 (숫자)
+    inputDelay: 3, // 내 입력을 몇 틱 뒤에 적용할지 (클수록 끊김↓ 반응↓)
+    hashInterval: 25, // 몇 틱마다 상태 요약값을 비교할지
+    hashSeed: 2166136261, // 요약값(FNV-1a) 계산용 고정 수
+    hashPrime: 16777619,
+    maxSeed: 2147483647, // 시작 시드 최댓값
+    pingIntervalMs: 1000, // 왕복 시간 재는 간격
+    waitingNoticeMs: 500, // 상대 입력을 이만큼 기다리면 "WAITING" 표시
+    disconnectTimeoutMs: 10000, // 이만큼 아무 메시지도 없으면 연결 끊김
+    hudY: 26, // 화면 위쪽 ping 표시 위치
+    hudFont: 'bold 10px monospace',
+  },
+
   // 컴퓨터 AI
   ai: {
     maxPredictTicks: 200, // 공을 미리 굴려 볼 최대 틱 수
@@ -259,6 +279,7 @@ export const CONFIG = {
     p2: { up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight', down: 'ArrowDown', hit: 'Enter' },
     back: 'Escape', // 메뉴 뒤로 가기, 경기 중 일시정지, 경기 종료 후 메뉴로
     mute: 'KeyM', // 소리 켜기/끄기
+    delete: 'Backspace', // 방 코드 한 글자 지우기
   },
 
   // 색상
@@ -279,6 +300,7 @@ export const CONFIG = {
     debugDrag: '#0033cc',
     debugLanding: '#ff0000',
     menuSelected: '#ffe04a',
+    warning: '#ff4040',
   },
 
   // 디버그 모드
