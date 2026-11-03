@@ -3,7 +3,9 @@ import { PHASE_SERVING, PHASE_SCORED, PHASE_FADE_OUT, PHASE_GAME_OVER } from './
 import { drawTeacher, REACTION_CHEER, REACTION_SAD } from './sprites.js';
 import { shakeOffset } from './effects.js';
 import { predictBall } from './ai.js';
-import { MENU_SCREENS, PAUSE_ITEMS } from './menu.js';
+import { MENU_SCREENS, PAUSE_ITEMS, SCREEN_JOIN } from './menu.js';
+import { NET_LOADING, NET_WAITING, NET_CONNECTING, NET_OPEN } from './net.js';
+import { ONLINE_ENDED, roomCode, isWaitingLong } from './online.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
 // debug: { enabled, stats, drag, settings, muted, effects } 화면 표시용 정보
@@ -65,7 +67,10 @@ export function drawMenu(ctx, menu, muted) {
   const { heading, items } = MENU_SCREENS[menu.screen];
   if (heading) drawText(ctx, heading, centerX, m.headingY, m.headingFont, 'center');
   drawMenuItems(ctx, items, menu.cursor);
-  drawText(ctx, m.hint, centerX, m.hintY, m.hintFont, 'center');
+  if (menu.screen === SCREEN_JOIN) {
+    drawText(ctx, codeSlots(menu.code), centerX, m.itemStartY, m.itemFont, 'center', CONFIG.colors.menuSelected);
+  }
+  drawText(ctx, menu.screen === SCREEN_JOIN ? m.joinHint : m.hint, centerX, m.hintY, m.hintFont, 'center');
   drawText(ctx, `M: SOUND ${muted ? 'OFF' : 'ON'}`, centerX, m.soundY, m.hintFont, 'center');
 
   // 오른쪽 아래 구석에 버전
@@ -73,15 +78,65 @@ export function drawMenu(ctx, menu, muted) {
   drawText(ctx, CONFIG.version, CONFIG.width - versionMargin, CONFIG.height - versionMargin, versionFont, 'right');
 }
 
+// 방 코드 칸: 입력한 숫자와 남은 칸(_)을 띄어서 "1 2 3 _ _ _"
+function codeSlots(code) {
+  const slots = [];
+  for (let i = 0; i < CONFIG.online.codeLength; i++) slots.push(code[i] ?? '_');
+  return slots.join(' ');
+}
+
 // 일시정지: 멈춘 경기 화면 위에 어둡게 덮고 항목 표시
 export function drawPause(ctx, pauseMenu) {
+  const m = CONFIG.menu;
+  drawChoice(ctx, m.pauseTitle, PAUSE_ITEMS, pauseMenu.cursor, m.pauseHint);
+}
+
+// 고르기 창: 화면을 어둡게 덮고 제목, 항목, 안내
+export function drawChoice(ctx, title, items, cursor, hint) {
   const m = CONFIG.menu;
   const centerX = CONFIG.width / 2;
 
   drawOverlay(ctx);
-  drawText(ctx, m.pauseTitle, centerX, m.headingY, m.titleFont, 'center');
-  drawMenuItems(ctx, PAUSE_ITEMS, pauseMenu.cursor);
-  drawText(ctx, m.pauseHint, centerX, m.hintY, m.hintFont, 'center');
+  drawText(ctx, title, centerX, m.headingY, m.titleFont, 'center');
+  drawMenuItems(ctx, items, cursor);
+  if (hint) drawText(ctx, hint, centerX, m.hintY, m.hintFont, 'center');
+}
+
+// 온라인 대기실: 방 코드, 연결 상태
+export function drawOnlineLobby(ctx, session) {
+  const m = CONFIG.menu;
+  const centerX = CONFIG.width / 2;
+  const status = session.net.status;
+
+  drawCourt(ctx);
+  if (session.phase === ONLINE_ENDED) return; // 끝났으면 안내 창이 위에 그려짐
+  drawOverlay(ctx);
+  drawText(ctx, 'ONLINE', centerX, m.titleY, m.titleFont, 'center');
+
+  let lines = [];
+  if (status === NET_LOADING) lines = ['LOADING...'];
+  if (status === NET_WAITING) lines = ['ROOM CODE', codeSlots(roomCode(session)), 'WAITING FOR PLAYER...'];
+  if (status === NET_CONNECTING) lines = [`JOINING ${roomCode(session)}...`];
+  if (status === NET_OPEN) lines = ['CONNECTED!', 'STARTING...'];
+  lines.forEach((line, i) => {
+    const color = i === 1 && status === NET_WAITING ? CONFIG.colors.menuSelected : CONFIG.colors.uiText;
+    drawText(ctx, line, centerX, m.headingY + m.itemGap * i, m.itemFont, 'center', color);
+  });
+  drawText(ctx, m.lobbyHint, centerX, m.hintY, m.hintFont, 'center');
+}
+
+// 온라인 경기 중 표시: 왕복 시간, 입력 지연, 기다리는 중, 어긋남 경고
+export function drawOnlineHud(ctx, session, now) {
+  const o = CONFIG.online;
+  const centerX = CONFIG.width / 2;
+  const ping = session.rtt === null ? '-' : `${session.rtt}ms`;
+  drawText(ctx, `PING ${ping}  DELAY ${o.inputDelay}`, centerX, o.hudY, o.hudFont, 'center');
+  if (session.desync) {
+    drawText(ctx, 'DESYNC!', centerX, o.hudY + CONFIG.debug.lineHeight, o.hudFont, 'center', CONFIG.colors.warning);
+  }
+  if (session.phase !== ONLINE_ENDED && isWaitingLong(session, now)) {
+    drawText(ctx, 'WAITING FOR OPPONENT...', centerX, CONFIG.ui.messageY, CONFIG.ui.subMessageFont, 'center');
+  }
 }
 
 // 화면 전체를 반투명하게 어둡게

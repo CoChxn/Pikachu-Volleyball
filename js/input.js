@@ -15,6 +15,16 @@ let debugEnabled = false;
 // 소리 꺼짐 여부 (게임 상태가 아닌 설정)
 let muted = false;
 
+// 방 코드 입력용: 눌린 숫자와 지우기 (한 번 꺼내 가면 지워짐)
+export const TYPED_DELETE = 'delete';
+let typedKeys = [];
+
+// e.code가 숫자 키(위쪽 숫자줄, 숫자 패드)면 그 숫자 글자, 아니면 null
+function digitOf(code) {
+  const match = /^(Digit|Numpad)(\d)$/.exec(code);
+  return match ? match[2] : null;
+}
+
 // 뒤로 가기 키가 눌렸는지 (한 번 꺼내 가면 지워짐)
 let backTapped = false;
 
@@ -22,6 +32,16 @@ window.addEventListener('keydown', (e) => {
   if (e.code === CONFIG.debug.toggleKey) {
     e.preventDefault();
     if (!e.repeat) debugEnabled = !debugEnabled;
+    return;
+  }
+  const digit = digitOf(e.code);
+  if (digit !== null) {
+    typedKeys.push(digit);
+    return;
+  }
+  if (e.code === CONFIG.keys.delete) {
+    e.preventDefault();
+    typedKeys.push(TYPED_DELETE);
     return;
   }
   if (e.code === CONFIG.keys.mute) {
@@ -74,6 +94,13 @@ export function readInputs() {
 
 export function isDebugEnabled() {
   return debugEnabled;
+}
+
+// 매 틱 호출: 지난 틱 이후 입력한 숫자·지우기 목록
+export function takeTypedKeys() {
+  const keys = typedKeys;
+  typedKeys = [];
+  return keys;
 }
 
 export function isMuted() {
