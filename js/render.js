@@ -5,17 +5,16 @@ import { predictBall } from './ai.js';
 import { MENU_SCREENS, PAUSE_ITEMS } from './menu.js';
 
 // 상태를 읽어 화면을 그린다. 상태는 절대 바꾸지 않는다.
-// debug: { enabled, stats, drag, settings, look } 화면 표시용 정보
+// debug: { enabled, stats, drag, settings } 화면 표시용 정보
 export function draw(ctx, state, debug) {
   drawCourt(ctx);
   for (const player of state.players) {
-    drawTeacher(ctx, player, debug.look, state.tick, reactionOf(state, player.side));
+    drawTeacher(ctx, player, state.tick, reactionOf(state, player.side));
   }
   drawBall(ctx, state.ball);
   drawScore(ctx, state);
   drawFade(ctx, state);
   drawMessage(ctx, state);
-  drawLookLabel(ctx, debug.look);
 
   if (debug.enabled) {
     drawDebug(ctx, state, debug);
@@ -115,12 +114,6 @@ function reactionOf(state, side) {
     return side === state.winner ? REACTION_CHEER : REACTION_SAD;
   }
   return null;
-}
-
-// 시안 비교용 임시 표시: 위쪽 가운데에 시안 이름
-function drawLookLabel(ctx, look) {
-  const t = CONFIG.teacher;
-  drawText(ctx, `${t.looks[look].name}  [${t.lookKey}]`, CONFIG.width / 2, t.lookLabelY, t.lookLabelFont, 'center');
 }
 
 // 공 임시 그림

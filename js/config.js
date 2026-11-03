@@ -100,52 +100,10 @@ export const CONFIG = {
   // 선생님 캐릭터 그림 (그림 전용, 충돌 판정은 player의 64×64 사각형 그대로)
   // 좌표는 캐릭터 중심 기준, +x가 얼굴 방향
   teacher: {
-    lookKey: 'F3', // 시안 비교용 임시 키 (시안을 고르면 없앤다)
-    lookLabelFont: 'bold 11px monospace',
-    lookLabelY: 14,
-    // 시안: hair(bob 단발 / bun 올림머리 / curly 뽀글 / short 짧은 머리), prop(pointer 지시봉 / book 출석부 / chalk 분필)
-    // palettes: [1P, 2P] 색. accent는 넥타이·출석부 색
-    looks: [
-      {
-        name: 'A1 BOB + POINTER',
-        hair: 'bob',
-        prop: 'pointer',
-        tie: false,
-        palettes: [
-          { hair: '#5a3825', outfit: '#f29cb7', glasses: '#7a3b2e', accent: '#c0392b' },
-          { hair: '#2a2a3a', outfit: '#7fbfe8', glasses: '#2b4a7a', accent: '#2e5fa8' },
-        ],
-      },
-      {
-        name: 'A2 BUN + BOOK',
-        hair: 'bun',
-        prop: 'book',
-        tie: false,
-        palettes: [
-          { hair: '#7a4a2a', outfit: '#f6c86a', glasses: '#8a5a20', accent: '#d9534f' },
-          { hair: '#3a3a3a', outfit: '#9ad3a8', glasses: '#2f6b45', accent: '#3b7dd8' },
-        ],
-      },
-      {
-        name: 'A3 CURLY + CHALK',
-        hair: 'curly',
-        prop: 'chalk',
-        tie: false,
-        palettes: [
-          { hair: '#a0522d', outfit: '#c9a0e8', glasses: '#6a3d8a', accent: '#8e44ad' },
-          { hair: '#444444', outfit: '#f0a070', glasses: '#8a4a20', accent: '#d35400' },
-        ],
-      },
-      {
-        name: 'A4 SHORT + TIE',
-        hair: 'short',
-        prop: 'pointer',
-        tie: true,
-        palettes: [
-          { hair: '#3b2a1a', outfit: '#e8dcc0', glasses: '#333333', accent: '#d9534f' },
-          { hair: '#1e1e28', outfit: '#c8d8e8', glasses: '#333333', accent: '#3b5fa8' },
-        ],
-      },
+    // 짧은 머리 + 넥타이 + 출석부. [1P, 2P] 색 (accent는 넥타이·출석부 색)
+    palettes: [
+      { hair: '#3b2a1a', outfit: '#e8dcc0', glasses: '#333333', accent: '#d9534f' },
+      { hair: '#1e1e28', outfit: '#c8d8e8', glasses: '#333333', accent: '#3b5fa8' },
     ],
     skin: '#ffd9b8',
     shoeColor: '#4a3a30',
@@ -196,17 +154,7 @@ export const CONFIG = {
       sad: 10,
     },
     hair: {
-      outline: 1, // 단발이 머리보다 바깥으로 나오는 정도
-      bobTop: 10,
-      bobLength: 24,
-      bobBackWidth: 6,
-      bobCorner: 5,
-      bunX: 9,
-      bunY: 15,
-      bunRadius: 7,
-      curlAngles: [-170, -140, -110, -80, -50, -20, 160],
-      curlRadius: 6,
-      hairLine: { bob: 5, bun: 7, curly: 8, short: 9 }, // 머리 중심에서 이마선까지 거리
+      hairLine: 9, // 머리 중심에서 이마선까지 거리
       sideWidth: 7, // 귀 쪽 옆머리 폭
       sideLength: 2,
       fringeX: 6, // 앞머리
@@ -230,19 +178,11 @@ export const CONFIG = {
       mouthOpenRadius: 2.5,
       mouthColor: '#c0504d',
     },
-    props: {
-      pointerLength: 16,
-      pointerWidth: 2,
-      pointerColor: '#8b5a2b',
-      pointerTipColor: '#e04040',
-      pointerTipRadius: 1.5,
-      bookWidth: 9,
-      bookHeight: 11,
-      bookSpine: 2,
-      bookPageColor: '#ffffff',
-      chalkLength: 5,
-      chalkWidth: 3,
-      chalkColor: '#ffffff',
+    book: {
+      width: 9, // 출석부 크기
+      height: 11,
+      spine: 2, // 흰 책장 폭
+      pageColor: '#ffffff',
     },
   },
 
